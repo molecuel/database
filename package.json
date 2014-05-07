@@ -27,6 +27,18 @@
     "mocha-jshint": ">=0.0.1"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha -R spec"
-  }
+    "test": "mocha -R spec"
+  },
+  "description": "molecuel CMS core database layer",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/molecuel/mlcl_database.git"
+  },
+  "author": "Dominic Böttger",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/molecuel/mlcl_database/issues"
+  },
+  "homepage": "https://github.com/molecuel/mlcl_database"
 }
