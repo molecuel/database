@@ -20,7 +20,7 @@ var mlcl_database = function() {
   molecuel.once('mlcl::core::init:post', function(molecuel) {
     self.config = molecuel.config.database;
     // call connect in scope of mlcl_database
-    self.connect.call(self, self.config.options, function(err) {
+    self.connect(self.config.option, function(err) {
       if(err) {
         console.log(err);
       }
