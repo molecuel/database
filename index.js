@@ -8,6 +8,7 @@ var mlcl_database = function() {
   var self = this;
   this.database = require('mongoose');
   require('mongoose-query-paginate');
+  this.find = this.database.find;
 
   this.database.connection.on('connected', function () {
     molecuel.emit('mlcl::database::connection:success', self);
