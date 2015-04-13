@@ -2,9 +2,9 @@
   "name": "mlcl_database",
   "dependencies": {
     "mongoose": ">=0.0.1",
-    "mongoose-query-paginate": ">=0.0.1"
+    "mlcl_database_cache": ">=0.0.1"
   },
-  "version": "0.5.5",
+  "version": "0.6.0",
   "engines": {
     "node": ">= 0.10.0"
   },

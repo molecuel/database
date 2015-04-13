@@ -3,11 +3,14 @@
  */
 var molecuel;
 
-
 var mlcl_database = function() {
   var self = this;
   this.database = require('mongoose');
-  require('mongoose-query-paginate');
+  this.cacheOpts = {
+    max:50,
+    maxAge:1000*60*60,
+    debug: true
+  };
 
   this.database.connection.on('connected', function () {
     molecuel.emit('mlcl::database::connection:success', self);
@@ -23,6 +26,12 @@ var mlcl_database = function() {
     self.connect(self.config.option, function(err) {
       if(err) {
         console.log(err);
+      } else {
+        if(self.config.cache) {
+          self.cacheOpts = self.config.cache;
+        }
+        self.querycache = require('mlcl_database_cache').getInstance();
+        self.querycache.install(self.database, self.cacheOpts);
       }
     });
   });
@@ -99,6 +108,16 @@ mlcl_database.prototype.registerModel = function(modelname, schema, options) {
   molecuel.emit('mlcl::database::registerModel:pre', this, modelname, schema, options);
   // register the schema - after this a redifinition is not possible anymore!
   var model = this.database.model(modelname, schema);
+  schema.pre('save', function(next) {
+    getInstance().querycache.del(modelname, this._id);
+    next();
+  });
+
+  schema.pre('remove', function(next) {
+    getInstance().querycache.del(modelname, this._id);
+    next();
+  });
+  
   molecuel.emit('mlcl::database::registerModel:post', this, modelname, model, options);
   // return the model
   return model;
