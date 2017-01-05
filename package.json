@@ -1,7 +1,7 @@
 {
   "name": "mlcl_database",
   "dependencies": {
-    "mongoose": "4.5.3",
+    "mongoose": "4.7.6",
     "mlcl_database_cache": ">=0.0.1"
   },
   "version": "0.6.1",
