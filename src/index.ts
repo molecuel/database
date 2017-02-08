@@ -4,5 +4,5 @@ import {injectable} from '@molecuel/di';
 export {IMlclDatabase} from './interfaces/IMlclDataBase';
 
 @injectable
-export class MldlDatabase {
+export class MlclDatabase {
 }
