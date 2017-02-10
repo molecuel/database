@@ -28,19 +28,19 @@ let config = {
             type: 'MlclMongoDb',
             uri: 'mongodb://localhost/mongodb_persistence_test',
             layer: dist_1.PERSISTENCE_LAYER
-        },
-        databases: [{
-                name: 'mongodb_popul',
-                type: 'MlclMongoDb',
-                uri: 'mongodb://localhost/mongodb_population_test',
-                layer: dist_1.POPULATION_LAYER
-            }, {
-                name: 'failing_db',
-                type: 'MlclMongoDb',
-                url: 'not_an_actual_url',
-                layer: dist_1.POPULATION_LAYER
-            }]
-    }
+        }
+    },
+    databases: [{
+            name: 'mongodb_popul',
+            type: 'MlclMongoDb',
+            uri: 'mongodb://localhost/mongodb_population_test',
+            layer: dist_1.POPULATION_LAYER
+        }, {
+            name: 'failing_db',
+            type: 'MlclMongoDb',
+            url: 'not_an_actual_url',
+            layer: dist_1.POPULATION_LAYER
+        }]
 };
 describe('MlclDatabase', function () {
     before(() => {
@@ -50,7 +50,7 @@ describe('MlclDatabase', function () {
     describe('startup', () => {
         it('should be possible to load the database config', () => {
             try {
-                dbHandler = di_1.di.getInstance('MlclDatabase', config);
+                dbHandler = di_1.di.getInstance('MlclDatabase');
                 assert(dbHandler);
                 dbHandler.should.be.instanceOf(dist_1.MlclDatabase);
                 dbHandler.addDatabasesFrom(config);
@@ -103,11 +103,15 @@ describe('MlclDatabase', function () {
             id: car.gearbox,
             gears: parseInt(car.gearbox.slice(0, 1))
         };
-        try {
-            yield dbHandler.populationDatabases.save(engine);
-            yield dbHandler.populationDatabases.save(gearbox);
-        }
-        catch (error) { }
+        before(() => __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield dbHandler.populationDatabases.save(engine);
+                yield dbHandler.populationDatabases.save(gearbox);
+            }
+            catch (error) {
+                should.not.exist(error);
+            }
+        }));
         it('should not store data in persistence layer (no collection)', () => __awaiter(this, void 0, void 0, function* () {
             try {
                 let response = yield dbHandler.persistenceDatabases.save({ _id: 2, make: 'B8' });
@@ -198,5 +202,15 @@ describe('MlclDatabase', function () {
                 should.not.exist(error);
             }
         }));
+    }));
+    after(() => __awaiter(this, void 0, void 0, function* () {
+        for (let connection of dbHandler.connections) {
+            try {
+                yield connection.database.dropDatabase();
+            }
+            catch (error) {
+                should.not.exist(error);
+            }
+        }
     }));
 });

@@ -1,5 +1,7 @@
 {
   "name": "@molecuel/database",
+  "version": "0.0.1",
+  "description": "Molecuel Database Module",
   "main": "dist/index.js",
   "scripts": {
     "test": "mocha",
@@ -10,7 +12,17 @@
     "coveralls": "npm run cover && cat ./coverage/lcov-remap.info | coveralls"
   },
   "keywords": [],
+  "author": "Dominic Böttger <Dominic.Boettger@inspirationlabs.com>",
+  "contributors": [
+    "Daniel Walther <Daniel.Walther@inspirationlabs.com>"
+  ],
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/molecuel/database/issues"
+  },
+  "homepage": "https://github.com/molecuel/database#readme",
   "devDependencies": {
+    "@molecuel/mongodb": "^2.0.0-alpha",
     "@types/fast-json-patch": "^1.0.4",
     "@types/gulp": "^3.8.32",
     "@types/gulp-plumber": "^0.0.29",
@@ -46,7 +58,8 @@
   },
   "dependencies": {
     "@molecuel/core": "^2.0.6",
-    "@molecuel/di": "^0.2.0"
+    "@molecuel/di": "^0.2.0",
+    "lodash": "^4.17.4"
   },
   "devconfig": {
     "paths": {

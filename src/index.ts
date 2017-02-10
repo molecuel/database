@@ -1,8 +1,7 @@
 'use strict';
-import {singleton, di} from '@molecuel/di';
-// import {MlclConfig} from '@molecuel/core';
 import * as _ from 'lodash';
-
+// import {MlclConfig} from '@molecuel/core';
+import {singleton, di} from '@molecuel/di';
 import {IMlclDatabase} from './interfaces/IMlclDataBase';
 export {IMlclDatabase} from './interfaces/IMlclDataBase';
 export const PERSISTENCE_LAYER = 'persistence';
@@ -12,11 +11,6 @@ export const POPULATION_LAYER = 'population';
 export class MlclDatabase {
   protected _databases: IMlclDatabase[] = [];
   protected _connections: any[] = []; // Map<string, any> = new Map();
-  constructor(config?: Object) {
-    if(config && !_.isEmpty(config)) {
-      this.addDatabasesFrom(config);
-    }
-  }
 
   public addDatabasesFrom(config: Object) {
     let databases: any[] = [];

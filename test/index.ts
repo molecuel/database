@@ -16,19 +16,19 @@ let config: any = {
       type: 'MlclMongoDb',
       uri: 'mongodb://localhost/mongodb_persistence_test',
       layer: PERSISTENCE_LAYER
-    },
-    databases: [{
-      name: 'mongodb_popul',
-      type: 'MlclMongoDb',
-      uri: 'mongodb://localhost/mongodb_population_test',
-      layer: POPULATION_LAYER
-    }, {
-      name: 'failing_db',
-      type: 'MlclMongoDb',
-      url: 'not_an_actual_url',
-      layer: POPULATION_LAYER
-    }]
-  }
+    }
+  },
+  databases: [{
+    name: 'mongodb_popul',
+    type: 'MlclMongoDb',
+    uri: 'mongodb://localhost/mongodb_population_test',
+    layer: POPULATION_LAYER
+  }, {
+    name: 'failing_db',
+    type: 'MlclMongoDb',
+    url: 'not_an_actual_url',
+    layer: POPULATION_LAYER
+  }]
 };
 
 describe('MlclDatabase', function() {
@@ -39,7 +39,7 @@ describe('MlclDatabase', function() {
   describe('startup', () => {
     it('should be possible to load the database config', () => {
       try {
-        dbHandler = di.getInstance('MlclDatabase', config);
+        dbHandler = di.getInstance('MlclDatabase');
         assert(dbHandler);
         dbHandler.should.be.instanceOf(MlclDatabase);
         dbHandler.addDatabasesFrom(config);
@@ -87,12 +87,15 @@ describe('MlclDatabase', function() {
       id: car.gearbox,
       gears: parseInt(car.gearbox.slice(0, 1))
     };
-    try {
-      await dbHandler.populationDatabases.save(engine);
-      await dbHandler.populationDatabases.save(gearbox);
-    }
-    catch (error) {}
-
+    before(async () => {
+      try {
+        await dbHandler.populationDatabases.save(engine);
+        await dbHandler.populationDatabases.save(gearbox);
+      }
+      catch (error) {
+        should.not.exist(error);
+      }
+    });
     it('should not store data in persistence layer (no collection)', async () => {
       try {
         let response = await dbHandler.persistenceDatabases.save({_id: 2, make: 'B8'});
@@ -175,4 +178,13 @@ describe('MlclDatabase', function() {
       }
     });
   }); // category end
+  after(async () => {
+    for (let connection of dbHandler.connections) {
+      try {
+        await connection.database.dropDatabase();
+      } catch (error) {
+        should.not.exist(error);
+      }
+    }
+  });
 }); // test end
