@@ -100,7 +100,7 @@ export class MlclDatabase {
 
         try {
           if (_.isArray(document[properties[index]])) {
-            response = await this.find({id: {$in: document[properties[index]]}}, collections[index]);
+            response = await this.find({_id: {$in: document[properties[index]]}}, collections[index]);
             if (response && response.length) {
               buffer[properties[index]] = response; // todo: filter responseItems to documentPropertyItems
               // if (response.length === document[properties[index]].length) {
@@ -109,7 +109,7 @@ export class MlclDatabase {
             }
           }
           else {
-            response = await this.find({id: document[properties[index]]}, collections[index]);
+            response = await this.find({_id: document[properties[index]]}, collections[index]);
             if (response[0]) {
               buffer[properties[index]] = response[0];
               successCount++;

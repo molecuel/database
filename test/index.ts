@@ -73,18 +73,18 @@ describe('MlclDatabase', function() {
       public get collection() { return 'cars'; }
     }
     let car = di.getInstance('Car');
-    car.id = 1;
+    car._id = 1;
     car.make = 'C4';
     car.engine = 'V6';
     car.gearbox = '5gear';
     let engine = {
       get collection() { return 'engines'; },
-      id: car.engine,
+      _id: car.engine,
       cylinders: parseInt(car.engine.slice(-1))
     };
     let gearbox = {
       get collection() { return 'transmissions'; },
-      id: car.gearbox,
+      _id: car.gearbox,
       gears: parseInt(car.gearbox.slice(0, 1))
     };
     before(async () => {
@@ -114,7 +114,7 @@ describe('MlclDatabase', function() {
     });
     it('should not read data from the persistence layer (no collection)', async () => {
       try {
-        let response = await dbHandler.persistenceDatabases.find({_id: car.id}, undefined);
+        let response = await dbHandler.persistenceDatabases.find({_id: car._id}, undefined);
         should.not.exist(response);
       } catch (error) {
         should.exist(error);
@@ -122,7 +122,7 @@ describe('MlclDatabase', function() {
     });
     it('should be possible to read data from the persistence layer', async () => {
       try {
-        let response = await dbHandler.persistenceDatabases.find({_id: car.id}, car.collection);
+        let response = await dbHandler.persistenceDatabases.find({_id: car._id}, car.collection);
         should.exist(response);
       } catch (error) {
         should.not.exist(error);
@@ -171,7 +171,7 @@ describe('MlclDatabase', function() {
     });
     it('should be possible to read data from the population layer', async () => {
       try {
-        let response = await dbHandler.populationDatabases.find({_id: car.id}, car.collection);
+        let response = await dbHandler.populationDatabases.find({_id: car._id}, car.collection);
         should.exist(response);
       } catch (error) {
         should.not.exist(error);
