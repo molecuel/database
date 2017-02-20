@@ -2,15 +2,15 @@
 import * as _ from 'lodash';
 // import {MlclConfig} from '@molecuel/core';
 import {singleton, di} from '@molecuel/di';
-import {IMlclDatabase} from './interfaces/IMlclDataBase';
-export {IMlclDatabase} from './interfaces/IMlclDataBase';
+import {IMlclDatabase} from './interfaces/IMlclDatabase';
+export {IMlclDatabase} from './interfaces/IMlclDatabase';
 export const PERSISTENCE_LAYER = 'persistence';
 export const POPULATION_LAYER = 'population';
 
 @singleton
 export class MlclDatabase {
-  protected _databases: IMlclDatabase[] = [];
-  protected _connections: any[] = []; // Map<string, any> = new Map();
+  protected _configs: IMlclDatabase[];
+  protected _connections: any[];
 
   public addDatabasesFrom(config: Object) {
     let databases: any[] = [];
@@ -31,51 +31,141 @@ export class MlclDatabase {
         }
       }
     }
-    this._databases = _.union(this._databases, databases);
+    if (databases.length && !this._configs) {
+      this._configs = [];
+    }
+    this._configs = _.union(this._configs, databases);
   }
 
   public async init() {
     let connections: any[] = [];
-    for (let database of this._databases) {
-      if (database && database.type && ((<any>database).uri || (<any>database).url)) {
-        let url = (<any>database).uri || (<any>database).url;
-        let instance = di.getInstance(database.type, url);
-        try {
-          await instance.connect();
-          connections.push({layer: database.layer, connection: instance});
-        } catch (error) {
-          // console.log(error);
+    if (this._configs) {
+      for (let database of this._configs) {
+        if (database && database.type && ((<any>database).uri || (<any>database).url)) {
+          let url = (<any>database).uri || (<any>database).url;
+          let instance = di.getInstance(database.type, url);
+          try {
+            await instance.connect();
+            connections.push({layer: database.layer, connection: instance});
+          } catch (error) {
+            // console.log(error);
+          }
         }
       }
     }
-    this._connections = connections;
+    if (connections.length) {
+      this._connections = connections;
+    }
+    else {
+      this._connections = undefined;
+    }
   }
 
-  public async save(document: any, collectionName?: string): Promise<any> {
+  /**
+   * Public rollback method
+   * @param {Map<IMlclDatabase, Set<[any, string]>} data    [A map of connection-keys and [document, collection name]-sets]
+   * @return {Promise<boolean|Error[]}                      [true on success; list of errors on failure]
+   */
+  public async rollback(data: Map<IMlclDatabase, Set<[any, string]>>): Promise<boolean|Error[]> {
+    let result = {
+      successCount: 0,
+      errors: []
+    };
+    for (let [connection, query] of data) {
+      try {
+        await (<any>connection).save(...query);
+        result.successCount++;
+      } catch (error) {
+        result.errors.push(error);
+      }
+    }
+    if (!result.errors.length && result.successCount === data.size) {
+      return Promise.resolve(true);
+    }
+    else {
+      return Promise.reject(result.errors.length === 1 ? result.errors[0] : result.errors);
+    }
+  }
+
+  public async save(document: any, collectionName?: string, rollbackOnError?: boolean): Promise<any> {
+    if (rollbackOnError !== false) {
+      rollbackOnError = true;
+    }
     let result = {
       successCount: 0,
       errorCount: 0,
       errors: []
     };
-    let copy = _.cloneDeep(document);
-    if (document.collection) {
-      collectionName = document.collection;
-      delete copy.collection;
-    }
-    for (let connectionShell of this._connections) {
-      try {
-        await connectionShell.connection.save(copy, collectionName);
-        result.successCount++;
-      } catch (error) {
-        result.errorCount++;
-        result.errors.push(error);
+    if (_.isEmpty(document)) {
+      let rejection = new Error('Refused to save empty or undefined object.');
+      delete rejection.stack;
+      return Promise.reject(rejection);
+    } else {
+      let copy = _.cloneDeep(document);
+      if (document.collection) {
+        collectionName = document.collection;
+        delete copy.collection;
       }
-    }
-    if (!result.successCount) {
-      return Promise.reject(result);
-    }
-    else {
-      return Promise.resolve(result);
+      let preSaveStates: Map<IMlclDatabase, any> = new Map();
+      for (let connectionShell of this._connections) {
+        let idPattern = connectionShell.connection.idPattern || connectionShell.connection.constructor.idPattern;
+        if (rollbackOnError && collectionName) {
+          let query = {};
+          query[idPattern] = document.id || document._id;
+          try {
+            let result = await this.find(query, collectionName);
+            if (_.isArray(result) && result.length) {
+              if (result.length === 1) {
+                preSaveStates.set(connectionShell.connection, new Set([result[0], collectionName]));
+              }
+              else {
+                // oops! multiple hits for the same id!! and now?
+                // for now, skip connection/do nothing
+              }
+            }
+            else {
+              // not found -> reset via query
+              preSaveStates.set(connectionShell.connection, new Set([query, collectionName]));
+            }
+          } catch (error) {
+            // db not reached?
+            // do nothing
+          }
+        }
+        try {
+          copy[idPattern] = document.id || document._id;
+          await connectionShell.connection.save(copy, collectionName);
+          result.successCount++;
+        } catch (error) {
+          if (!collectionName) {
+            return Promise.reject(error);
+          }
+          else if (rollbackOnError) {
+            preSaveStates.delete(connectionShell.connection); // do not include current connection in rollback;
+            try {
+              if (await this.rollback(preSaveStates)) {
+                let message = new Error('Save failed on one or more databases. Rollback successful.');
+                delete message.stack;
+                return Promise.reject(message);
+              }
+            } catch (error) {
+              // error on rollback!
+              let rejectReason = new Error('Save failed on one or more databases. Rollback failed!');
+              delete rejectReason.stack;
+              rejectReason['reason'] = error;
+              return Promise.reject(rejectReason);
+            }
+          }
+          result.errorCount++;
+          result.errors.push(error);
+        }
+      }
+      if (!result.successCount) {
+        return Promise.reject(result);
+      }
+      else {
+        return Promise.resolve(result);
+      }
     }
   }
 
@@ -94,22 +184,35 @@ export class MlclDatabase {
     }
     let successCount: number = 0;
     let buffer = {};
+    let idPattern = this._connections[0].connection.idPattern ||this._connections[0].connection.constructor.idPattern;
     for (let index: number = 0; index < properties.length; index ++) {
       if (document[properties[index]]) {
         let response;
-
+        let query = {};
         try {
           if (_.isArray(document[properties[index]])) {
-            response = await this.find({_id: {$in: document[properties[index]]}}, collections[index]);
-            if (response && response.length) {
-              buffer[properties[index]] = response; // todo: filter responseItems to documentPropertyItems
-              // if (response.length === document[properties[index]].length) {
+            query[idPattern] = {$in: document[properties[index]]};
+            response = await this.find(query, collections[index]);
+            if (response && _.isArray(response) && response.length) {
+              // map response items to current document items
+              response = _.map(document[properties[index]], (entry) => {
+                let responseHit = _.find(response, (item) => {
+                  return _.isEqual(item[idPattern], entry);
+                });
+                if (responseHit) {
+                  return responseHit;
+                }
+                else {
+                  return entry;
+                }
+              });
+              buffer[properties[index]] = response;
               successCount++;
-              // }
             }
           }
           else {
-            response = await this.find({_id: document[properties[index]]}, collections[index]);
+            query[idPattern] = document[properties[index]];
+            response = await this.find(query, collections[index]);
             if (response[0]) {
               buffer[properties[index]] = response[0];
               successCount++;
@@ -139,11 +242,15 @@ export class MlclDatabase {
   }
 
   public get connections(): any[] {
-    return _.map(this._connections, 'connection');
+    return this._connections ? _.map(this._connections, 'connection') : undefined;
+  }
+
+  public get configs(): IMlclDatabase[] {
+    return this._configs;
   }
 
   public get persistenceDatabases(): MlclDatabase {
-    let persDbs = _.filter(this._databases, (db) => {
+    let persDbs = _.filter(this._configs, (db) => {
       return (db && db.layer === PERSISTENCE_LAYER);
     });
     let persConn = _.filter(this._connections, (conn) => {
@@ -153,7 +260,7 @@ export class MlclDatabase {
   }
 
   public get populationDatabases(): MlclDatabase {
-    let popuDbs = _.filter(this._databases, (db) => {
+    let popuDbs = _.filter(this._configs, (db) => {
       return (db && db.layer === POPULATION_LAYER);
     });
     let popuConn = _.filter(this._connections, (conn) => {
@@ -182,7 +289,7 @@ export class MlclDatabase {
 class MlclDatabaseSubset extends MlclDatabase {
   constructor(databases: IMlclDatabase[], connections: any[] /*Map<string, any>*/) {
     super();
-    this._databases = databases;
+    this._configs = databases;
     this._connections = connections;
     // delete this.persistenceDatabases;
     // delete this.populationDatabases;

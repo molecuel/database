@@ -1,5 +1,6 @@
 export interface IMlclDatabase {
   type;
+  idPattern?;
   layer?;
   connect();
   save();
