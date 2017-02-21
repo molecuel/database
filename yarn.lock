@@ -31,9 +31,9 @@
     reflect-metadata "^0.1.3"
     remap-istanbul "^0.8.4"
 
-"@molecuel/mongodb@^2.0.0-alpha":
-  version "2.0.0-alpha"
-  resolved "https://registry.yarnpkg.com/@molecuel/mongodb/-/mongodb-2.0.0-alpha.tgz#51022a0b45515bc97735380ee0bae0c363f3e89f"
+"@molecuel/mongodb@^2.0.1-alpha1":
+  version "2.0.1-alpha1"
+  resolved "https://registry.yarnpkg.com/@molecuel/mongodb/-/mongodb-2.0.1-alpha1.tgz#f79424c81abfc51330f91c875b237c8da3f32276"
   dependencies:
     "@molecuel/core" "^2.0.6"
     "@molecuel/di" "^0.2.0"
