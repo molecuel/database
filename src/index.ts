@@ -172,6 +172,7 @@ export class MlclDatabase {
   public async find(query: Object, collectionName: string): Promise<any[] | Error> {
     try {
       let response = await this._connections[0].connection.find(query, collectionName);
+      console.log({findResp: response});
       return Promise.resolve(response);
     } catch (error) {
       return Promise.reject(error);
@@ -193,7 +194,7 @@ export class MlclDatabase {
           if (_.isArray(document[properties[index]])) {
             query[idPattern] = {$in: document[properties[index]]};
             response = await this.find(query, collections[index]);
-            console.log({resp: response});
+            console.log({popFindQuery: query, popFindResp: response});
             if (response && _.isArray(response) && response.length) {
               // map response items to current document items
               response = _.map(document[properties[index]], (entry) => {
