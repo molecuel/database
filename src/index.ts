@@ -225,7 +225,6 @@ export class MlclDatabase {
       }
     }
     if (!successCount) {
-      console.log({doc: document, buffer: buffer, props: properties, coll: collections, idP: idPattern});
       return Promise.reject(document);
     }
     else if (successCount < properties.length) {

@@ -95,8 +95,8 @@ describe('MlclDatabase', function() {
     };
     before(async () => {
       try {
-        await dbHandler.populationDatabases.save(engine);
-        await dbHandler.populationDatabases.save(gearbox);
+        await dbHandler.save(engine);
+        await dbHandler.save(gearbox);
       }
       catch (error) {
         should.not.exist(error);
