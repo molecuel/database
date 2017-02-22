@@ -177,7 +177,7 @@ describe('MlclDatabase', function() {
         should.not.exist(error);
       }
     });
-    it('should be possible to store and populate data in the population layer', async () => {
+    it('should be possible to store populated data in the population layer', async () => {
       let response;
       try {
         response = await dbHandler.populationDatabases.save(car);

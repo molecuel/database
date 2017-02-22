@@ -193,6 +193,7 @@ export class MlclDatabase {
           if (_.isArray(document[properties[index]])) {
             query[idPattern] = {$in: document[properties[index]]};
             response = await this.find(query, collections[index]);
+            console.log({resp: response});
             if (response && _.isArray(response) && response.length) {
               // map response items to current document items
               response = _.map(document[properties[index]], (entry) => {
@@ -225,6 +226,7 @@ export class MlclDatabase {
       }
     }
     if (!successCount) {
+      console.log({doc: document, buffer: buffer, props: properties, coll: collections, idP: idPattern});
       return Promise.reject(document);
     }
     else if (successCount < properties.length) {

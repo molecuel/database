@@ -110,8 +110,8 @@ describe('MlclDatabase', function () {
         };
         before(() => __awaiter(this, void 0, void 0, function* () {
             try {
-                yield dbHandler.populationDatabases.save(engine);
-                yield dbHandler.populationDatabases.save(gearbox);
+                yield dbHandler.save(engine);
+                yield dbHandler.save(gearbox);
             }
             catch (error) {
                 should.not.exist(error);
@@ -200,7 +200,7 @@ describe('MlclDatabase', function () {
                 should.not.exist(error);
             }
         }));
-        it('should be possible to store and populate data in the population layer', () => __awaiter(this, void 0, void 0, function* () {
+        it('should be possible to store populated data in the population layer', () => __awaiter(this, void 0, void 0, function* () {
             let response;
             try {
                 response = yield dbHandler.populationDatabases.save(car);
