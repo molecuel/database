@@ -188,6 +188,7 @@ describe('MlclDatabase', function () {
         it('should be possible to populate data', () => __awaiter(this, void 0, void 0, function* () {
             let response;
             try {
+                console.log({ allSavedEnginesPopulation: yield dbHandler.populationDatabases.find({}, 'engines'), allSavedEnginesPersistence: yield dbHandler.persistenceDatabases.find({}, 'engines') });
                 response = yield dbHandler.populationDatabases.populate(car, undefined, undefined);
                 should.exist(response);
                 response = yield dbHandler.populationDatabases.populate({ engines: ['V6', 'V6', 'V10'] }, ['engines'], ['engines']);

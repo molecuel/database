@@ -166,6 +166,7 @@ describe('MlclDatabase', function() {
     it('should be possible to populate data', async () => {
       let response;
       try {
+        console.log({allSavedEnginesPopulation: await dbHandler.populationDatabases.find({}, 'engines'), allSavedEnginesPersistence: await dbHandler.persistenceDatabases.find({}, 'engines')});
         response = await dbHandler.populationDatabases.populate(car, undefined, undefined);
         should.exist(response);
         response = await dbHandler.populationDatabases.populate({engines: ['V6', 'V6', 'V10']}, ['engines'], ['engines']);
