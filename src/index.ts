@@ -184,7 +184,7 @@ export class MlclDatabase {
     }
     let successCount: number = 0;
     let buffer = {};
-    let idPattern = this._connections[0].connection.idPattern ||this._connections[0].connection.constructor.idPattern;
+    let idPattern = this._connections[0].connection.idPattern || this._connections[0].connection.constructor.idPattern;
     for (let index: number = 0; index < properties.length; index ++) {
       if (document[properties[index]]) {
         let response;
@@ -225,6 +225,7 @@ export class MlclDatabase {
       }
     }
     if (!successCount) {
+      console.log({doc: document, buffer: buffer, props: properties, coll: collections, idP: idPattern});
       return Promise.reject(document);
     }
     else if (successCount < properties.length) {

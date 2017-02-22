@@ -16,7 +16,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 require("reflect-metadata");
 const should = require("should");
 const assert = require("assert");
-const _ = require("lodash");
 const di_1 = require("@molecuel/di");
 const core_1 = require("@molecuel/core");
 const mongodb_1 = require("@molecuel/mongodb");
@@ -165,7 +164,7 @@ describe('MlclDatabase', function () {
             }
             should.exist(response);
         }));
-        it('should fail to populate', () => __awaiter(this, void 0, void 0, function* () {
+        it('should fail to populate non-saved references', () => __awaiter(this, void 0, void 0, function* () {
             let response;
             let errorObj = { engines: ['V2', 'V4'] };
             try {
@@ -238,13 +237,9 @@ describe('MlclDatabase', function () {
             should.exist(response.successCount);
             response.successCount.should.equal(dbHandler.connections.length);
             response = undefined;
-            let conCopy = _.cloneDeep(dbHandler._connections[1].connection);
-            let layer = dbHandler._connections[1].layer;
-            conCopy.idPattern = '_id.uid';
-            dbHandler._connections[1] = { layer: layer, connection: conCopy };
-            yield conCopy.connect();
             rollbackCar.make = 'IIII';
             try {
+                yield dbHandler.connections[1].database.close();
                 response = yield dbHandler.save(rollbackCar);
             }
             catch (error) {
@@ -252,22 +247,30 @@ describe('MlclDatabase', function () {
                 should.exist(error.message);
                 error.message.should.containEql('Rollback successful');
             }
+            finally {
+                yield dbHandler.connections[1].database.open();
+            }
             should.not.exist(response);
         }));
-        it('should fail saving on misconfigured databases and not start a rollback (explicit suppression)', () => __awaiter(this, void 0, void 0, function* () {
+        it('should fail saving on disconnected databases and not start a rollback (explicit suppression)', () => __awaiter(this, void 0, void 0, function* () {
             let response;
-            let conCopy = _.cloneDeep(dbHandler._connections[0].connection);
-            let layer = dbHandler._connections[0].layer;
-            conCopy.idPattern = '_id.uid';
-            dbHandler._connections[0] = { layer: layer, connection: conCopy };
-            yield conCopy.connect();
             try {
+                for (let con of dbHandler.connections) {
+                    yield con.database.close();
+                }
                 response = yield dbHandler.save(car, null, false);
             }
             catch (error) {
                 should.exist(error);
                 should.exist(error.errors);
-                error.errors.length.should.equal(2);
+                should.exist(error.errorCount);
+                error.errors.length.should.equal(dbHandler.connections.length);
+                error.errorCount.should.equal(error.errors.length);
+            }
+            finally {
+                for (let con of dbHandler.connections) {
+                    yield con.database.open();
+                }
             }
             should.not.exist(response);
         }));

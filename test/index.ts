@@ -144,7 +144,7 @@ describe('MlclDatabase', function() {
       }
       should.exist(response);
     });
-    it('should fail to populate', async () => {
+    it('should fail to populate non-saved references', async () => {
       let response;
       let errorObj = {engines: ['V2', 'V4']};
       try {
@@ -223,34 +223,38 @@ describe('MlclDatabase', function() {
       should.exist(response.successCount);
       response.successCount.should.equal(dbHandler.connections.length);
       response = undefined;
-      let conCopy = _.cloneDeep((<any>dbHandler)._connections[1].connection);
-      let layer = (<any>dbHandler)._connections[1].layer;
-      conCopy.idPattern = '_id.uid';
-      (<any>dbHandler)._connections[1] = {layer: layer, connection: conCopy};
-      await conCopy.connect();
       rollbackCar.make = 'IIII';
       try {
+        await dbHandler.connections[1].database.close();
         response = await dbHandler.save(rollbackCar);
       } catch (error) {
         should.exist(error);
         should.exist(error.message);
         error.message.should.containEql('Rollback successful');
       }
+      finally {
+        await dbHandler.connections[1].database.open();
+      }
       should.not.exist(response);
     });
-    it('should fail saving on misconfigured databases and not start a rollback (explicit suppression)', async () => {
+    it('should fail saving on disconnected databases and not start a rollback (explicit suppression)', async () => {
       let response;
-      let conCopy = _.cloneDeep((<any>dbHandler)._connections[0].connection);
-      let layer = (<any>dbHandler)._connections[0].layer;
-      conCopy.idPattern = '_id.uid';
-      (<any>dbHandler)._connections[0] = {layer: layer, connection: conCopy};
-      await conCopy.connect();
       try {
+        for (let con of dbHandler.connections) {
+          await con.database.close();
+        }
         response = await dbHandler.save(car, null, false);
       } catch (error) {
         should.exist(error);
         should.exist(error.errors);
-        error.errors.length.should.equal(2);
+        should.exist(error.errorCount);
+        error.errors.length.should.equal(dbHandler.connections.length);
+        error.errorCount.should.equal(error.errors.length);
+      }
+      finally {
+        for (let con of dbHandler.connections) {
+          await con.database.open();
+        }
       }
       should.not.exist(response);
       // should.not.exist(response.message);
