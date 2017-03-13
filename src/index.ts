@@ -1,9 +1,7 @@
 'use strict';
 import * as _ from 'lodash';
-// import {MlclConfig} from '@molecuel/core';
 import {singleton, di} from '@molecuel/di';
-import {IMlclDatabase} from './interfaces/IMlclDatabase';
-export {IMlclDatabase} from './interfaces/IMlclDatabase';
+import {IMlclDatabase} from '@molecuel/core';
 export const PERSISTENCE_LAYER = 'persistence';
 export const POPULATION_LAYER = 'population';
 
