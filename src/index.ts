@@ -45,7 +45,7 @@ export class MlclDatabase {
           let url = (<any>database).uri || (<any>database).url;
           let instance = di.getInstance(database.type, url);
           if (database.idPattern) {
-            instance.idPattern = function(): string { return database.idPattern; };
+            Object.defineProperty(instance, 'idPattern', { get: function(): string { return database.idPattern; }});
           }
           try {
             await instance.connect();
