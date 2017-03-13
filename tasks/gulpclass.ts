@@ -86,7 +86,7 @@ export class Gulpfile {
     sourcepaths.push(this.config.paths.source);
     let tsResult = gulp.src(sourcepaths)
       .pipe(sourcemaps.init())
-      .pipe(this.tsProject()));
+      .pipe(this.tsProject());
 
     return merge([
       tsResult.dts.pipe(gulp.dest(this.config.paths.dist)),

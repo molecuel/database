@@ -44,6 +44,9 @@ export class MlclDatabase {
         if (database && database.type && ((<any>database).uri || (<any>database).url)) {
           let url = (<any>database).uri || (<any>database).url;
           let instance = di.getInstance(database.type, url);
+          if (database.idPattern) {
+            instance.idPattern = function(): string { return database.idPattern; };
+          }
           try {
             await instance.connect();
             connections.push({layer: database.layer, connection: instance});
@@ -94,6 +97,7 @@ export class MlclDatabase {
     let result = {
       successCount: 0,
       errorCount: 0,
+      successes: [],
       errors: []
     };
     if (_.isEmpty(document)) {
@@ -134,8 +138,9 @@ export class MlclDatabase {
         }
         try {
           copy[idPattern] = document.id || document._id;
-          await connectionShell.connection.save(copy, collectionName);
+          let saved = await connectionShell.connection.save(copy, collectionName);
           result.successCount++;
+          result.successes.push(saved);
         } catch (error) {
           if (!collectionName) {
             return Promise.reject(error);

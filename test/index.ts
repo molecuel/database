@@ -38,7 +38,7 @@ describe('MlclDatabase', function() {
   });
   let dbHandler: MlclDatabase;
   describe('startup', () => {
-    it('should not any connections upon init without configs', async () => {
+    it('should not have any connections upon init without configs', async () => {
       dbHandler = di.getInstance('MlclDatabase');
         assert(dbHandler);
         dbHandler.should.be.instanceOf(MlclDatabase);
@@ -125,6 +125,12 @@ describe('MlclDatabase', function() {
         should.not.exist(error);
       }
       should.exist(response);
+      should.exist(response.successes);
+      should.exist(response.successes[0]);
+      car.id.should.equal(response.successes[0]._id);
+      car.make.should.equal(response.successes[0].make);
+      car.engine.should.equal(response.successes[0].engine);
+      car.gearbox.should.equal(response.successes[0].gearbox);
     });
     it('should not read data from the persistence layer (no collection)', async () => {
       let response;
