@@ -1,14 +1,13 @@
 'use strict';
 import 'reflect-metadata';
-import should = require('should');
-import assert = require('assert');
-import * as _ from 'lodash';
+import * as should from 'should';
+import * as assert from 'assert';
+// import * as _ from 'lodash';
 import {di, injectable} from '@molecuel/di';
 import {MlclCore} from '@molecuel/core';
 import {MlclMongoDb} from '@molecuel/mongodb';
 import {MlclDatabase, PERSISTENCE_LAYER, POPULATION_LAYER} from '../dist';
 // import {Subject, Observable} from '@reactivex/rxjs';
-should();
 
 let config: any = {
   molecuel: {
@@ -16,7 +15,8 @@ let config: any = {
       name: 'mongodb_pers',
       type: 'MlclMongoDb',
       uri: 'mongodb://localhost/mongodb_persistence_test',
-      layer: PERSISTENCE_LAYER
+      layer: PERSISTENCE_LAYER,
+      idPattern: '_id'
     }
   },
   databases: [{
@@ -249,7 +249,7 @@ describe('MlclDatabase', function() {
         for (let con of dbHandler.connections) {
           await con.database.close();
         }
-        response = await dbHandler.save(car, null, false);
+        response = await dbHandler.save(car, undefined, undefined, false);
       } catch (error) {
         should.exist(error);
         should.exist(error.errors);
@@ -269,7 +269,7 @@ describe('MlclDatabase', function() {
   after(async () => {
     for (let connection of dbHandler.connections) {
       try {
-        await connection.database.dropDatabase();
+        // await connection.database.dropDatabase();
       } catch (error) {
         should.not.exist(error);
       }

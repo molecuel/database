@@ -67,7 +67,7 @@ export class MlclDatabase {
    * @param {Map<IMlclDatabase, Set<[any, string]>} data    [A map of connection-keys and [document, collection name]-sets]
    * @return {Promise<boolean|Error[]}                      [true on success; list of errors on failure]
    */
-  public async rollback(data: Map<IMlclDatabase, Set<[any, string]>>): Promise<boolean|Error[]> {
+  public async rollback(data: Map<IMlclDatabase, Set<[any, string, boolean]>>): Promise<boolean|Error[]> {
     let result = {
       successCount: 0,
       errors: []
@@ -88,10 +88,7 @@ export class MlclDatabase {
     }
   }
 
-  public async save(document: any, collectionName?: string, rollbackOnError?: boolean): Promise<any> {
-    if (rollbackOnError !== false) {
-      rollbackOnError = true;
-    }
+  public async save(document: any, collectionName?: string, upsert: boolean = true, rollbackOnError: boolean = true): Promise<any> {
     let result = {
       successCount: 0,
       errorCount: 0,
@@ -118,7 +115,7 @@ export class MlclDatabase {
             let result = await this.find(query, collectionName);
             if (_.isArray(result) && result.length) {
               if (result.length === 1) {
-                preSaveStates.set(connectionShell.connection, new Set([result[0], collectionName]));
+                preSaveStates.set(connectionShell.connection, new Set([result[0], collectionName, upsert]));
               }
               else {
                 // oops! multiple hits for the same id!! and now?
@@ -127,7 +124,7 @@ export class MlclDatabase {
             }
             else {
               // not found -> reset via query
-              preSaveStates.set(connectionShell.connection, new Set([query, collectionName]));
+              preSaveStates.set(connectionShell.connection, new Set([query, collectionName, upsert]));
             }
           } catch (error) {
             // db not reached?
@@ -136,7 +133,7 @@ export class MlclDatabase {
         }
         try {
           copy[idPattern] = document.id || document._id;
-          let saved = await connectionShell.connection.save(copy, collectionName);
+          let saved = await connectionShell.connection.save(copy, collectionName, upsert);
           result.successCount++;
           result.successes.push(saved);
         } catch (error) {

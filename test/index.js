@@ -21,14 +21,14 @@ const di_1 = require("@molecuel/di");
 const core_1 = require("@molecuel/core");
 const mongodb_1 = require("@molecuel/mongodb");
 const dist_1 = require("../dist");
-should();
 let config = {
     molecuel: {
         database: {
             name: 'mongodb_pers',
             type: 'MlclMongoDb',
             uri: 'mongodb://localhost/mongodb_persistence_test',
-            layer: dist_1.PERSISTENCE_LAYER
+            layer: dist_1.PERSISTENCE_LAYER,
+            idPattern: '_id'
         }
     },
     databases: [{
@@ -265,7 +265,7 @@ describe('MlclDatabase', function () {
                 for (let con of dbHandler.connections) {
                     yield con.database.close();
                 }
-                response = yield dbHandler.save(car, null, false);
+                response = yield dbHandler.save(car, undefined, undefined, false);
             }
             catch (error) {
                 should.exist(error);
@@ -285,7 +285,6 @@ describe('MlclDatabase', function () {
     after(() => __awaiter(this, void 0, void 0, function* () {
         for (let connection of dbHandler.connections) {
             try {
-                yield connection.database.dropDatabase();
             }
             catch (error) {
                 should.not.exist(error);
