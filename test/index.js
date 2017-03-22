@@ -285,6 +285,7 @@ describe('MlclDatabase', function () {
     after(() => __awaiter(this, void 0, void 0, function* () {
         for (let connection of dbHandler.connections) {
             try {
+                yield connection.database.dropDatabase();
             }
             catch (error) {
                 should.not.exist(error);

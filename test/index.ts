@@ -269,7 +269,7 @@ describe('MlclDatabase', function() {
   after(async () => {
     for (let connection of dbHandler.connections) {
       try {
-        // await connection.database.dropDatabase();
+        await connection.database.dropDatabase();
       } catch (error) {
         should.not.exist(error);
       }
