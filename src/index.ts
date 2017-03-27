@@ -2,6 +2,7 @@
 import * as _ from 'lodash';
 import {singleton, di} from '@molecuel/di';
 import {IMlclDatabase} from '@molecuel/core';
+import {IMlclDbResult} from './interfaces/IMlclDbResult';
 export const PERSISTENCE_LAYER = 'persistence';
 export const POPULATION_LAYER = 'population';
 
@@ -10,10 +11,19 @@ export class MlclDatabase {
   protected _configs: IMlclDatabase[];
   protected _connections: any[];
 
+  /**
+   * Register database configurations from any object, resolving existing "database" or "databases" properties
+   *
+   * @param {Object} config - The object to resolve the database configurations from
+   *
+   * @memberOf MlclDatabase
+   */
   public addDatabasesFrom(config: Object) {
     let databases: any[] = [];
     if(config && !_.isEmpty(config)) {
+      // loop over object or array properties
       for (let prop in config) {
+        // check for relevant property
         if (prop === 'database' || prop === 'databases') {
           if (_.isArray(config[prop])) {
             for (let database of config[prop]) {
@@ -24,6 +34,7 @@ export class MlclDatabase {
             databases.push(config[prop]);
           }
         }
+        // check for sub-objects to resolve
         else if (typeof config[prop] === 'object' && typeof config[prop] !== 'function' && config[prop] !== null) {
           this.addDatabasesFrom(config[prop]);
         }
@@ -35,6 +46,11 @@ export class MlclDatabase {
     this._configs = _.union(this._configs, databases);
   }
 
+  /**
+   * Initialize connections based on restistered configurations
+   *
+   * @memberOf MlclDatabase
+   */
   public async init() {
     let connections: any[] = [];
     if (this._configs) {
@@ -43,7 +59,11 @@ export class MlclDatabase {
           let url = (<any>database).uri || (<any>database).url;
           let instance = di.getInstance(database.type, url);
           if (database.idPattern) {
-            Object.defineProperty(instance, 'idPattern', { get: function(): string { return database.idPattern; }});
+            Object.defineProperty(instance, 'idPattern', {
+              get: function(): string {
+                return database.idPattern;
+              }
+            });
           }
           try {
             await instance.connect();
@@ -63,13 +83,16 @@ export class MlclDatabase {
   }
 
   /**
-   * Public rollback method
-   * @param {Map<IMlclDatabase, Set<[any, string]>} data    [A map of connection-keys and [document, collection name]-sets]
-   * @return {Promise<boolean|Error[]}                      [true on success; list of errors on failure]
+   * Applies rollback query to respective connection
+   *
+   * @param {Map<IMlclDatabase, Set<[any, string, boolean]>>} data - Map of connection keys and document-collection-upsert sets
+   * @returns {(Promise<boolean|Error[]>)}
+   * @memberOf MlclDatabase
    */
   public async rollback(data: Map<IMlclDatabase, Set<[any, string, boolean]>>): Promise<boolean|Error[]> {
-    let result = {
+    let result: IMlclDbResult = {
       successCount: 0,
+      errorCount: 0,
       errors: []
     };
     for (let [connection, query] of data) {
@@ -77,6 +100,7 @@ export class MlclDatabase {
         await (<any>connection).save(...query);
         result.successCount++;
       } catch (error) {
+        result.errorCount++;
         result.errors.push(error);
       }
     }
@@ -84,12 +108,23 @@ export class MlclDatabase {
       return Promise.resolve(true);
     }
     else {
-      return Promise.reject(result.errors.length === 1 ? result.errors[0] : result.errors);
+      return Promise.reject(result.errors);
     }
   }
 
+  /**
+   * Saves a single document to a collection on all connected databases
+   *
+   * @param {*} document - the document to save
+   * @param {string} [collectionName] - the collection to save the document to
+   * @param {boolean} [upsert=true] - whether to insert new document
+   * @param {boolean} [rollbackOnError=true] - whether to execute rollback on any failing save
+   * @returns {Promise<any>}
+   *
+   * @memberOf MlclDatabase
+   */
   public async save(document: any, collectionName?: string, upsert: boolean = true, rollbackOnError: boolean = true): Promise<any> {
-    let result = {
+    let result: IMlclDbResult = {
       successCount: 0,
       errorCount: 0,
       successes: [],
@@ -111,6 +146,7 @@ export class MlclDatabase {
         if (rollbackOnError && collectionName) {
           let query = {};
           query[idPattern] = document.id || document._id;
+          // gather document states pre save
           try {
             let result = await this.find(query, collectionName);
             if (_.isArray(result) && result.length) {
@@ -124,13 +160,14 @@ export class MlclDatabase {
             }
             else {
               // not found -> reset via query
-              preSaveStates.set(connectionShell.connection, new Set([query, collectionName, upsert]));
+              preSaveStates.set(connectionShell.connection, new Set([query, collectionName, false]));
             }
           } catch (error) {
             // db not reached?
             // do nothing
           }
         }
+        // save document
         try {
           copy[idPattern] = document.id || document._id;
           let saved = await connectionShell.connection.save(copy, collectionName, upsert);
@@ -141,7 +178,8 @@ export class MlclDatabase {
             return Promise.reject(error);
           }
           else if (rollbackOnError) {
-            preSaveStates.delete(connectionShell.connection); // do not include current connection in rollback;
+            // do not include current connection in rollback;
+            preSaveStates.delete(connectionShell.connection);
             try {
               if (await this.rollback(preSaveStates)) {
                 let message = new Error('Save failed on one or more databases. Rollback successful.');
@@ -169,6 +207,15 @@ export class MlclDatabase {
     }
   }
 
+  /**
+   * Find document in collection of the first connection by query
+   *
+   * @param {Object} query
+   * @param {string} collectionName
+   * @returns {(Promise<any[] | Error>)}
+   *
+   * @memberOf MlclDatabase
+   */
   public async find(query: Object, collectionName: string): Promise<any[] | Error> {
     try {
       let response = await this._connections[0].connection.find(query, collectionName);
@@ -178,18 +225,32 @@ export class MlclDatabase {
     }
   }
 
+  /**
+   * Populate a given document's properties in supplied collections via find operation
+   *
+   * @param {*} document - The document to populate
+   * @param {string[]} properties - The properties to populate
+   * @param {string[]} collections - The collections to populate from
+   * @returns {Promise<any>}
+   *
+   * @memberOf MlclDatabase
+   */
   public async populate(document: any, properties: string[], collections: string[]): Promise<any> {
-    if (!properties) {
+    if (!properties || !properties.length) {
+      // no properties to populate; return unmodified document
       return Promise.resolve(document);
     }
     let successCount: number = 0;
     let buffer = {};
     let idPattern = this._connections[0].connection.idPattern || this._connections[0].connection.constructor.idPattern;
+    // iterate over requested properties
     for (let index: number = 0; index < properties.length; index ++) {
+      // check for requested property existing on document
       if (document[properties[index]]) {
         let response;
         let query = {};
         try {
+          // check if property is array of references
           if (_.isArray(document[properties[index]])) {
             query[idPattern] = {$in: document[properties[index]]};
             response = await this.find(query, collections[index]);
@@ -210,6 +271,7 @@ export class MlclDatabase {
               successCount++;
             }
           }
+          // requested property is single reference
           else {
             query[idPattern] = document[properties[index]];
             response = await this.find(query, collections[index]);
@@ -224,6 +286,7 @@ export class MlclDatabase {
         }
       }
     }
+    // result management
     if (!successCount) {
       return Promise.reject(document);
     }
@@ -241,14 +304,35 @@ export class MlclDatabase {
     }
   }
 
+  /**
+   * Array of available connections
+   *
+   * @readonly
+   * @type {any[]}
+   * @memberOf MlclDatabase
+   */
   public get connections(): any[] {
     return this._connections ? _.map(this._connections, 'connection') : undefined;
   }
 
+  /**
+   * Array of registered configurations
+   *
+   * @readonly
+   * @type {IMlclDatabase[]}
+   * @memberOf MlclDatabase
+   */
   public get configs(): IMlclDatabase[] {
     return this._configs;
   }
 
+  /**
+   * Subset; only connected databases registered as persistence layer
+   *
+   * @readonly
+   * @type {MlclDatabase}
+   * @memberOf MlclDatabase
+   */
   public get persistenceDatabases(): MlclDatabase {
     let persDbs = _.filter(this._configs, (db) => {
       return (db && db.layer === PERSISTENCE_LAYER);
@@ -259,6 +343,13 @@ export class MlclDatabase {
     return <MlclDatabase>this.deepFreeze(new MlclDatabaseSubset(persDbs, persConn));
   }
 
+  /**
+   * Subset; only connected databases registered as population layer
+   *
+   * @readonly
+   * @type {MlclDatabase}
+   * @memberOf MlclDatabase
+   */
   public get populationDatabases(): MlclDatabase {
     let popuDbs = _.filter(this._configs, (db) => {
       return (db && db.layer === POPULATION_LAYER);
@@ -269,10 +360,17 @@ export class MlclDatabase {
     return <MlclDatabase>this.deepFreeze(new MlclDatabaseSubset(popuDbs, popuConn));
   }
 
-  protected deepFreeze(obj: Object, depth?: number) {
-    if (typeof depth === 'undefined') {
-      depth = 5;
-    }
+  /**
+   * Set and return the given object as readonly (with given depth)
+   *
+   * @protected
+   * @param {Object} obj - The object to set as readonly
+   * @param {number} [depth=5] - The maximum depth to apply the readonly status to
+   * @returns {Object} The readonly object
+   *
+   * @memberOf MlclDatabase
+   */
+  protected deepFreeze(obj: Object, depth: number = 5): Object {
     let keys = Object.keys(obj);
     for (let prop in obj) {
       if (_.includes(keys, prop)) {
@@ -286,6 +384,12 @@ export class MlclDatabase {
   }
 }
 
+/**
+ * Represents a subset of databases
+ *
+ * @class MlclDatabaseSubset
+ * @extends {MlclDatabase}
+ */
 class MlclDatabaseSubset extends MlclDatabase {
   constructor(databases: IMlclDatabase[], connections: any[] /*Map<string, any>*/) {
     super();
