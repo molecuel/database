@@ -1,6 +1,6 @@
 [![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url] [![Coverage percentage][coveralls-image]][coveralls-url]
 
-[npm-image]: https://badge.fury.io/js/@molecuel/database.svg
+[npm-image]: https://badge.fury.io/js/%40molecuel%2Fdatabase.svg
 [npm-url]: https://npmjs.org/package/@molecuel/database
 [travis-image]: https://travis-ci.org/molecuel/database.svg?branch=master
 [travis-url]: https://travis-ci.org/molecuel/database
