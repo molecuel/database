@@ -123,89 +123,90 @@ export class MlclDatabase {
    */
   // tslint:disable-next-line:max-line-length
   public async save(document: any, collectionName?: string, upsert: boolean = true, rollbackOnError: boolean = true): Promise<any> {
-    let result: IMlclDbResult = {
-      errorCount: 0,
-      errors: [],
-      successCount: 0,
-      successes: [] };
-    if (_.isEmpty(document)) {
-      let rejection = new Error("Refused to save empty or undefined object.");
-      delete rejection.stack;
-      return Promise.reject(rejection);
-    } else if (!this.ownConnections) {
-      let rejection = new Error("No active connections.");
-      delete rejection.stack;
-      return Promise.reject(rejection);
-    } else {
-      let copy = _.cloneDeep(document);
-      if (document.collection || document.constructor.collection) {
-        collectionName = document.collection || document.constructor.collection;
-        delete copy.collection;
-      }
-      let preSaveStates: Map<IMlclDatabase, any> = new Map();
-      for (let connectionShell of this.ownConnections) {
-        // check for active connection
-        if (connectionShell.connection) {
-          let idPattern = connectionShell.connection.idPattern || connectionShell.connection.constructor.idPattern;
-          if (rollbackOnError && collectionName) {
-            let query = {};
-            query[idPattern] = document.id || document._id;
-            // gather document states pre save
-            try {
-              let response = await this.find(query, collectionName);
-              if (_.isArray(response) && response.length) {
-                if (response.length === 1) {
-                  preSaveStates.set(connectionShell.connection, new Set([response[0], collectionName, upsert]));
-                } else {
-                  // oops! multiple hits for the same id!! and now?
-                  // for now, skip connection/do nothing
-                }
-              } else {
-                // not found -> reset via query
-                preSaveStates.set(connectionShell.connection, new Set([query, collectionName, false]));
-              }
-            } catch (error) {
-              // db not reached?
-              // do nothing
-            }
-          }
-          // save document
-          try {
-            copy[idPattern] = document.id || document._id;
-            let saved = await connectionShell.connection.save(copy, collectionName, upsert);
-            result.successCount++;
-            result.successes.push(saved);
-          } catch (error) {
-            if (!collectionName) {
-              return Promise.reject(error);
-            } else if (rollbackOnError) {
-              // do not include current connection in rollback;
-              preSaveStates.delete(connectionShell.connection);
+    return new Promise(async (resolve, reject) => {
+      let result: IMlclDbResult = {
+        errorCount: 0,
+        errors: [],
+        successCount: 0,
+        successes: [] };
+      if (_.isEmpty(document)) {
+        let rejection = new Error("Refused to save empty or undefined object.");
+        delete rejection.stack;
+        reject(rejection);
+      } else if (!this.ownConnections) {
+        let rejection = new Error("No active connections.");
+        delete rejection.stack;
+        reject(rejection);
+      } else {
+        let copy = _.cloneDeep(document);
+        if (document.collection || document.constructor.collection) {
+          collectionName = document.collection || document.constructor.collection;
+          delete copy.collection;
+        }
+        let preSaveStates: Map<IMlclDatabase, any> = new Map();
+        for (let connectionShell of this.ownConnections) {
+          // check for active connection
+          if (connectionShell.connection) {
+            let idPattern = connectionShell.connection.idPattern || connectionShell.connection.constructor.idPattern;
+            if (rollbackOnError && collectionName) {
+              let query = {};
+              query[idPattern] = document.id || document._id;
+              // gather document states pre save
               try {
-                if (await this.rollback(preSaveStates)) {
-                  let message = new Error("Save failed on one or more databases. Rollback successful.");
-                  delete message.stack;
-                  return Promise.reject(message);
+                let response = await this.find(query, collectionName);
+                if (_.isArray(response) && response.length) {
+                  if (response.length === 1) {
+                    preSaveStates.set(connectionShell.connection, new Set([response[0], collectionName, upsert]));
+                  } else {
+                    // oops! multiple hits for the same id!! and now?
+                    // for now, skip connection/do nothing
+                  }
+                } else {
+                  // not found -> reset via query
+                  preSaveStates.set(connectionShell.connection, new Set([query, collectionName, false]));
                 }
               } catch (error) {
-                // error on rollback!
-                let rejectReason = new Error("Save failed on one or more databases. Rollback failed!");
-                delete rejectReason.stack;
-                (<any> rejectReason).reason = error;
-                return Promise.reject(rejectReason);
+                // db not reached?
+                // do nothing
               }
             }
-            result.errorCount++;
-            result.errors.push(error);
+            // save document
+            try {
+              copy[idPattern] = document.id || document._id;
+              let saved = await connectionShell.connection.save(copy, collectionName, upsert);
+              result.successCount++;
+              result.successes.push(saved);
+            } catch (error) {
+              if (!collectionName) {
+                reject(error);
+              } else if (rollbackOnError) {
+                // do not include current connection in rollback;
+                preSaveStates.delete(connectionShell.connection);
+                try {
+                  await this.rollback(preSaveStates);
+                  let message = new Error("Save failed on one or more databases. Rollback successful.");
+                  delete message.stack;
+                  reject(message);
+                } catch (error) {
+                  // error on rollback!
+                  let rejectReason = new Error("Save failed on one or more databases. Rollback failed!");
+                  delete rejectReason.stack;
+                  (<any> rejectReason).reason = error;
+                  reject(rejectReason);
+                }
+              }
+              result.errorCount++;
+              result.errors.push(error);
+            }
           }
         }
+        if (!result.successCount) {
+          reject(result);
+        } else {
+          resolve(result);
+        }
       }
-      if (!result.successCount) {
-        return Promise.reject(result);
-      } else {
-        return Promise.resolve(result);
-      }
-    }
+    });
   }
 
   /**

@@ -1,33 +1,15 @@
 "use strict";
+process.env.configpath = "./test/config/";
 import * as assert from "assert";
 // import * as _ from 'lodash';
 import "reflect-metadata";
 import * as should from "should";
 
-import {MlclCore} from "@molecuel/core";
+import {MlclConfig, MlclCore} from "@molecuel/core";
 import {di, injectable} from "@molecuel/di";
 import {MlclMongoDb} from "@molecuel/mongodb";
 import {MlclDatabase, PERSISTENCE_LAYER, POPULATION_LAYER} from "../dist";
 // import {Subject, Observable} from '@reactivex/rxjs';
-
-let config: any = {
-  databases: [{
-    layer: POPULATION_LAYER,
-    name: "mongodb_popul",
-    type: "MlclMongoDb",
-    uri: "mongodb://localhost/mongodb_population_test",
-  }, {
-    layer: POPULATION_LAYER,
-    name: "failing_db",
-    type: "MlclMongoDb",
-    url: "not_an_actual_url" }],
-  molecuel: {
-    database: {
-      idPattern: "_id",
-      layer: PERSISTENCE_LAYER,
-      name: "mongodb_pers",
-      type: "MlclMongoDb",
-      uri: "mongodb://localhost/mongodb_persistence_test" } } };
 
 describe("MlclDatabase", () => {
   before(() => {
@@ -44,6 +26,7 @@ describe("MlclDatabase", () => {
     });
     it("should be possible to load the database config", () => {
       try {
+        let config = di.getInstance("MlclConfig").getConfig();
         dbHandler.addDatabasesFrom(config);
         (<any> dbHandler).configs.should.be.an.Array();
         (<any> dbHandler).configs.length.should.be.above(0);

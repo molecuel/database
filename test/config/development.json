@@ -1,0 +1,25 @@
+{
+    "databases": [
+        {
+            "layer": "population",
+            "name": "mongodb_popul",
+            "type": "MlclMongoDb",
+            "uri": "mongodb://localhost/mongodb_population_test"
+        },
+        {
+            "layer": "population",
+            "name": "failing_db",
+            "type": "MlclMongoDb",
+            "url": "not_an_actual_url" 
+        }
+    ],
+    "molecuel": {
+        "database": {
+            "idPattern": "_id",
+            "layer": "persistence",
+            "name": "mongodb_pers",
+            "type": "MlclMongoDb",
+            "uri": "mongodb://localhost/mongodb_persistence_test" 
+        }
+    }
+}

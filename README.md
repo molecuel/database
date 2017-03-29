@@ -1,15 +1,4 @@
-[![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url] [![Coverage percentage][coveralls-image]][coveralls-url]
-
-[npm-image]: https://badge.fury.io/js/%40molecuel%2Fdatabase.svg
-[npm-url]: https://npmjs.org/package/@molecuel/database
-[travis-image]: https://travis-ci.org/molecuel/database.svg?branch=master
-[travis-url]: https://travis-ci.org/molecuel/database
-[daviddm-image]: https://david-dm.org/molecuel/database.svg?theme=shields.io
-[daviddm-url]: https://david-dm.org/molecuel/database
-[coveralls-image]: https://coveralls.io/repos/molecuel/database/badge.svg
-[coveralls-url]: https://coveralls.io/r/molecuel/database
-
-# Database module for molecuel framework
+# @molecuel/database [![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url] [![Coverage percentage][coveralls-image]][coveralls-url]
 
 @molecuel/database is a general database management module, able to  manage all database libraries or classes adhering to @molecuel/core's IMlclDatabase interface definition and made injectable via @molecuel/di.
 It's initialization is based on the @molecuel/di dependency injection module and it exists as a singleton.
@@ -17,32 +6,48 @@ It's initialization is based on the @molecuel/di dependency injection module and
 ## Initialization
 
 To use it, simply include its import in the di's bootstrap and get the singleton instance by name.
-You can then add configurations based on any object with respective properties and connect to databases (e.g. MongoDb).
+You can then add configurations based on any object with respective properties (it is recommended to use seperate .json-files and @molecuel/core's config functionality; see below) and connect to databases (e.g. MongoDb).
+
+###  ./test/config/development.json :
+```json
+{
+    "databases": [
+        {
+            "layer": "population",
+            "name": "mongodb_popul",
+            "type": "MlclMongoDb",
+            "uri": "mongodb://localhost/mongodb_population_test"
+        },
+        {
+            "layer": "population",
+            "name": "failing_db",
+            "type": "MlclMongoDb",
+            "url": "not_an_actual_url" 
+        }
+    ],
+    "molecuel": {
+        "database": {
+            "idPattern": "_id",
+            "layer": "persistence",
+            "name": "mongodb_pers",
+            "type": "MlclMongoDb",
+            "uri": "mongodb://localhost/mongodb_persistence_test" 
+        }
+    }
+}
+```
 
 ```typescript
 import { di } from '@molecuel/di';
-import { MlclCore } from '@molecuel/core';
+import { MlclConfig, MlclCore } from '@molecuel/core';
 import { MlclDatabase, PERSISTENCE_LAYER, POPULATION_LAYER } from '@molecuel/database';
 import { MlclMongoDb } from '@molecuel/mongodb';
+process.env.configpath = "./test/config/";
 
 di.bootstrap(MlclCore, MlclDatabase, MlclMongoDb);
 
 let dbHandler: MlclDatabase = di.getInstance('MlclDatabase');
-let config: any = {
-  databases: [{
-    idPattern: '_id',
-    layer: PERSISTENCE_LAYER,
-    name: 'mongodb_pers',
-    type: 'MlclMongoDb',
-    uri: 'mongodb://localhost/mongodb_persistence'
-  },
-  {
-    layer: POPULATION_LAYER,
-    name: 'mongodb_popul',
-    type: 'MlclMongoDb',
-    uri: 'mongodb://localhost/mongodb_population'
-  }]
-};
+let config = di.getInstance('MlclConfig').getConfig();
 
 dbHandler.addDatabasesFrom(config);
 (async () => {
@@ -99,3 +104,12 @@ class Car {
     }
 })();
 ```
+
+[npm-image]: https://badge.fury.io/js/%40molecuel%2Fdatabase.svg
+[npm-url]: https://npmjs.org/package/@molecuel/database
+[travis-image]: https://travis-ci.org/molecuel/database.svg?branch=master
+[travis-url]: https://travis-ci.org/molecuel/database
+[daviddm-image]: https://david-dm.org/molecuel/database.svg?theme=shields.io
+[daviddm-url]: https://david-dm.org/molecuel/database
+[coveralls-image]: https://coveralls.io/repos/molecuel/database/badge.svg
+[coveralls-url]: https://coveralls.io/r/molecuel/database
