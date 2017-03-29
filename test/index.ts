@@ -1,67 +1,64 @@
-'use strict';
-import 'reflect-metadata';
-import * as should from 'should';
-import * as assert from 'assert';
+"use strict";
+import * as assert from "assert";
 // import * as _ from 'lodash';
-import {di, injectable} from '@molecuel/di';
-import {MlclCore} from '@molecuel/core';
-import {MlclMongoDb} from '@molecuel/mongodb';
-import {MlclDatabase, PERSISTENCE_LAYER, POPULATION_LAYER} from '../dist';
+import "reflect-metadata";
+import * as should from "should";
+
+import {MlclCore} from "@molecuel/core";
+import {di, injectable} from "@molecuel/di";
+import {MlclMongoDb} from "@molecuel/mongodb";
+import {MlclDatabase, PERSISTENCE_LAYER, POPULATION_LAYER} from "../dist";
 // import {Subject, Observable} from '@reactivex/rxjs';
 
 let config: any = {
+  databases: [{
+    layer: POPULATION_LAYER,
+    name: "mongodb_popul",
+    type: "MlclMongoDb",
+    uri: "mongodb://localhost/mongodb_population_test",
+  }, {
+    layer: POPULATION_LAYER,
+    name: "failing_db",
+    type: "MlclMongoDb",
+    url: "not_an_actual_url" }],
   molecuel: {
     database: {
-      name: 'mongodb_pers',
-      type: 'MlclMongoDb',
-      uri: 'mongodb://localhost/mongodb_persistence_test',
+      idPattern: "_id",
       layer: PERSISTENCE_LAYER,
-      idPattern: '_id'
-    }
-  },
-  databases: [{
-    name: 'mongodb_popul',
-    type: 'MlclMongoDb',
-    uri: 'mongodb://localhost/mongodb_population_test',
-    layer: POPULATION_LAYER
-  }, {
-    name: 'failing_db',
-    type: 'MlclMongoDb',
-    url: 'not_an_actual_url',
-    layer: POPULATION_LAYER
-  }]
-};
+      name: "mongodb_pers",
+      type: "MlclMongoDb",
+      uri: "mongodb://localhost/mongodb_persistence_test" } } };
 
-describe('MlclDatabase', function() {
+describe("MlclDatabase", () => {
   before(() => {
     di.bootstrap(MlclCore, MlclMongoDb);
   });
   let dbHandler: MlclDatabase;
-  describe('startup', () => {
-    it('should not have any connections upon init without configs', async () => {
-      dbHandler = di.getInstance('MlclDatabase');
-        assert(dbHandler);
-        dbHandler.should.be.instanceOf(MlclDatabase);
-        await dbHandler.init();
-        should.not.exist(dbHandler.connections);
+  describe("startup", () => {
+    it("should not have any connections upon init without configs", async () => {
+      dbHandler = di.getInstance("MlclDatabase");
+      assert(dbHandler);
+      dbHandler.should.be.instanceOf(MlclDatabase);
+      await dbHandler.init();
+      should.not.exist(dbHandler.connections);
     });
-    it('should be possible to load the database config', () => {
+    it("should be possible to load the database config", () => {
       try {
         dbHandler.addDatabasesFrom(config);
-        (<any>dbHandler).configs.should.be.an.Array();
-        (<any>dbHandler).configs.length.should.be.above(0);
+        (<any> dbHandler).configs.should.be.an.Array();
+        (<any> dbHandler).configs.length.should.be.above(0);
       } catch (error) {
         should.not.exist(error);
       }
     });
-    it('should be possible to initialize all configured Database interfaces', async () => {
+    it("should be possible to initialize all configured Database interfaces", async () => {
       try {
         await dbHandler.init();
       } catch (error) {
         should.not.exist(error);
       }
     });
-    it('should be possible to access the database connections', () => {
+    it("should be possible to access the database connections", () => {
       try {
         let connections = dbHandler.connections;
         should.exist(connections);
@@ -72,40 +69,37 @@ describe('MlclDatabase', function() {
       }
     });
   }); // category end
-  describe('interaction', async () => {
+  describe("interaction", async () => {
     @injectable
     class Car {
-      public get collection() { return 'cars'; }
+      public static get collection() { return "cars"; }
     }
     let rollbackCar;
-    let car = di.getInstance('Car');
+    let car = di.getInstance("Car");
     car.id = 1;
-    car.make = 'C4';
-    car.engine = 'V6';
-    car.gearbox = '5gear';
+    car.make = "C4";
+    car.engine = "V6";
+    car.gearbox = "5gear";
     let engine = {
-      get collection() { return 'engines'; },
-      id: car.engine,
-      cylinders: parseInt(car.engine.slice(-1))
-    };
+      get collection() { return "engines"; },
+      cylinders: parseInt(car.engine.slice(-1), 10),
+      id: car.engine };
     let gearbox = {
-      get collection() { return 'transmissions'; },
-      id: car.gearbox,
-      gears: parseInt(car.gearbox.slice(0, 1))
-    };
+      get collection() { return "transmissions"; },
+      gears: parseInt(car.gearbox.slice(0, 1), 10),
+      id: car.gearbox };
     before(async () => {
       try {
         await dbHandler.save(engine);
         await dbHandler.save(gearbox);
-      }
-      catch (error) {
+      } catch (error) {
         should.not.exist(error);
       }
     });
-    it('should not store data in persistence layer (no collection; empty object)', async () => {
+    it("should not store data in persistence layer (no collection; empty object)", async () => {
       let response;
       try {
-        response = await dbHandler.persistenceDatabases.save({id: 2, make: 'B8'});
+        response = await dbHandler.persistenceDatabases.save({id: 2, make: "B8"});
       } catch (error) {
         should.exist(error);
       }
@@ -117,7 +111,7 @@ describe('MlclDatabase', function() {
       }
       should.not.exist(response);
     });
-    it('should be possible to store data in persistence layer', async () => {
+    it("should be possible to store data in persistence layer", async () => {
       let response;
       try {
         response = await dbHandler.persistenceDatabases.save(car);
@@ -132,7 +126,7 @@ describe('MlclDatabase', function() {
       car.engine.should.equal(response.successes[0].engine);
       car.gearbox.should.equal(response.successes[0].gearbox);
     });
-    it('should not read data from the persistence layer (no collection)', async () => {
+    it("should not read data from the persistence layer (no collection)", async () => {
       let response;
       try {
         response = await dbHandler.persistenceDatabases.find({_id: car.id}, undefined);
@@ -141,49 +135,58 @@ describe('MlclDatabase', function() {
       }
       should.not.exist(response);
     });
-    it('should be possible to read data from the persistence layer', async () => {
+    it("should be possible to read data from the persistence layer", async () => {
       let response;
       try {
-        response = await dbHandler.persistenceDatabases.find({id: car.id}, car.collection);
+        response = await dbHandler.persistenceDatabases.find({id: car.id}, Car.collection);
       } catch (error) {
         should.not.exist(error);
       }
       should.exist(response);
     });
-    it('should fail to populate non-saved references', async () => {
+    it("should fail to populate non-saved references", async () => {
       let response;
-      let errorObj = {engines: ['V2', 'V4']};
+      let errorObj = {engines: ["V2", "V4"]};
       try {
-        response = await dbHandler.populationDatabases.populate(errorObj, ['engines'], ['engines']);
+        response = await dbHandler.populationDatabases.populate(errorObj, ["engines"], ["engines"]);
         should.not.exist(response);
       } catch (error) {
         should.exist(error);
         assert(error.engines && error.engines === errorObj.engines);
       }
-      let partialErrorObj = {primaryEngine: 'V8', backupEngine: 'V6'};
+      let partialErrorObj = {primaryEngine: "V8", backupEngine: "V6"};
       try {
-        response = await dbHandler.populationDatabases.populate(partialErrorObj, ['primaryEngine', 'backupEngine'], ['engines', 'engines']);
+        response = await dbHandler.populationDatabases.populate(
+          partialErrorObj,
+          ["primaryEngine", "backupEngine"],
+          ["engines", "engines"]);
         should.not.exist(response);
       } catch (error) {
         should.exist(error);
         assert(error.primaryEngine && error.primaryEngine === partialErrorObj.primaryEngine);
       }
     });
-    it('should be possible to populate data', async () => {
+    it("should be possible to populate data", async () => {
       let response;
       try {
         response = await dbHandler.populationDatabases.populate(car, undefined, undefined);
         should.exist(response);
-        response = await dbHandler.populationDatabases.populate({engines: ['V6', 'V6', 'V10']}, ['engines'], ['engines']);
+        response = await dbHandler.populationDatabases.populate(
+          {engines: ["V6", "V6", "V10"]},
+          ["engines"],
+          ["engines"]);
         should.exist(response);
-        response = await dbHandler.populationDatabases.populate(car, ['engine', 'gearbox'], ['engines', 'transmissions']);
+        response = await dbHandler.populationDatabases.populate(
+          car,
+          ["engine", "gearbox"],
+          ["engines", "transmissions"]);
         should.exist(response);
         car = response;
       } catch (error) {
         should.not.exist(error);
       }
     });
-    it('should be possible to store populated data in the population layer', async () => {
+    it("should be possible to store populated data in the population layer", async () => {
       let response;
       try {
         response = await dbHandler.populationDatabases.save(car);
@@ -192,10 +195,10 @@ describe('MlclDatabase', function() {
       }
       should.exist(response);
     });
-    it('should be possible to read data from the population layer', async () => {
+    it("should be possible to read data from the population layer", async () => {
       let response;
       try {
-        response = await dbHandler.populationDatabases.find({_id: car.id}, car.collection);
+        response = await dbHandler.populationDatabases.find({_id: car.id}, Car.collection);
       } catch (error) {
         should.not.exist(error);
       }
@@ -213,11 +216,11 @@ describe('MlclDatabase', function() {
     //   }
     //   should.not.exist(response);
     // });
-    it('should roll back completed save operations after a failing one', async () => {
+    it("should roll back completed save operations after a failing one", async () => {
       let response;
-      rollbackCar = di.getInstance('Car');
+      rollbackCar = di.getInstance("Car");
       rollbackCar.id = 99;
-      rollbackCar.make = 'OOOO';
+      rollbackCar.make = "OOOO";
       rollbackCar.engine = car.engine._id;
       rollbackCar.gearbox = car.gearbox._id;
       try {
@@ -229,21 +232,20 @@ describe('MlclDatabase', function() {
       should.exist(response.successCount);
       response.successCount.should.equal(dbHandler.connections.length);
       response = undefined;
-      rollbackCar.make = 'IIII';
+      rollbackCar.make = "IIII";
       try {
         await dbHandler.connections[1].database.close();
         response = await dbHandler.save(rollbackCar);
       } catch (error) {
         should.exist(error);
         should.exist(error.message);
-        error.message.should.containEql('Rollback successful');
-      }
-      finally {
+        error.message.should.containEql("Rollback successful");
+      } finally {
         await dbHandler.connections[1].database.open();
       }
       should.not.exist(response);
     });
-    it('should fail saving on disconnected databases and not start a rollback (explicit suppression)', async () => {
+    it("should fail saving on disconnected databases and not start a rollback (explicit suppression)", async () => {
       let response;
       try {
         for (let con of dbHandler.connections) {
@@ -256,8 +258,7 @@ describe('MlclDatabase', function() {
         should.exist(error.errorCount);
         error.errors.length.should.equal(dbHandler.connections.length);
         error.errorCount.should.equal(error.errors.length);
-      }
-      finally {
+      } finally {
         for (let con of dbHandler.connections) {
           await con.database.open();
         }

@@ -4,12 +4,24 @@
   "description": "Molecuel Database Module",
   "main": "dist/index.js",
   "scripts": {
-    "test": "mocha",
+    "tslint": "./node_modules/.bin/tslint --project tsconfig.json",
+    "tslint_test": "./node_modules/.bin/tslint --project tsconfig.test.json",
+    "ts": "./node_modules/.bin/tsc -p .",
+    "ts_test": "./node_modules/.bin/tsc -p tsconfig.test.json",
+    "build": "npm run tslint && npm run ts",
+    "build_test": "npm run tslint_test && npm run ts_test",
+    "build_all": "npm run build && npm run build_test",
+    "mocha": "./node_modules/.bin/mocha",
+    "test": "npm run ts_test && npm run mocha",
     "cover": "istanbul cover ./node_modules/mocha/bin/_mocha && npm run remap && npm run remaphtml && npm run remaplcov",
     "remap": "./node_modules/.bin/remap-istanbul -i coverage/coverage.json -o coverage/coverage-remap.json",
     "remaphtml": "./node_modules/.bin/remap-istanbul -i coverage/coverage.json -o coverage/html -t html",
     "remaplcov": "./node_modules/.bin/remap-istanbul -i coverage/coverage.json -o coverage/lcov-remap.info -t lcovonly",
-    "coveralls": "npm run cover && cat ./coverage/lcov-remap.info | coveralls"
+    "coveralls": "npm run cover && cat ./coverage/lcov-remap.info | coveralls",
+    "createdoc": "./node_modules/.bin/typedoc --gaID UA-89800241-1 --out ./docs --target es6 --mode file --ignoreCompilerErrors",
+    "publishdocs": "./node_modules/.bin/gh-pages -d docs",
+    "docs": "npm run createdoc && npm run publishdocs",
+    "2npm": "./node_modules/.bin/publish && npm run docs"
   },
   "keywords": [],
   "author": "Dominic Böttger <Dominic.Boettger@inspirationlabs.com>",
@@ -22,13 +34,8 @@
   },
   "homepage": "https://github.com/molecuel/database#readme",
   "devDependencies": {
-    "@molecuel/mongodb": "^2.0.1-alpha4",
+    "@molecuel/mongodb": "^2.0.1-alpha6",
     "@types/fast-json-patch": "^1.0.4",
-    "@types/gulp": "^3.8.32",
-    "@types/gulp-plumber": "^0.0.29",
-    "@types/gulp-tslint": "^3.6.30",
-    "@types/gulp-typescript": "^0.0.32",
-    "@types/merge2": "^0.3.29",
     "@types/mocha": "^2.2.33",
     "@types/mongodb": "^2.1.38",
     "@types/should": "^8.1.30",
@@ -36,16 +43,7 @@
     "assert": ">=0.0.1",
     "coveralls": "^2.11.15",
     "del": "^2.2.0",
-    "gulp": "^3.9.1",
-    "gulp-gh-pages": "^0.5.4",
-    "gulp-plumber": "^1.1.0",
-    "gulp-sourcemaps": "^2.2.2",
-    "gulp-tsconfig-files": "^0.2.5",
-    "gulp-tslint": "^7.0.1",
-    "gulp-typedoc": "^2.0.1",
-    "gulp-typescript": "^3.1.3",
-    "gulp-util": "^3.0.7",
-    "gulpclass": "0.0.8",
+    "gh-pages": "^0.12.0",
     "istanbul": "^0.4.5",
     "merge2": "^1.0.1",
     "mocha": "^3.2.0",
@@ -54,18 +52,11 @@
     "should": ">= 0.0.1",
     "tslint": "^4.4.2",
     "typedoc": "^0.5.1",
-    "typescript": "^2.1.5"
+    "typescript": "^2.2.1"
   },
   "dependencies": {
     "@molecuel/core": "^2.0.12",
     "@molecuel/di": "^0.2.0",
     "lodash": "^4.17.4"
-  },
-  "devconfig": {
-    "paths": {
-      "testsource": "test/**/*.ts",
-      "source": "src/**/*.ts",
-      "dist": "dist/"
-    }
   }
 }

@@ -1,4 +1,4 @@
-'use strict';
+"use strict";
 var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
     var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
     if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
@@ -14,49 +14,49 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const assert = require("assert");
 require("reflect-metadata");
 const should = require("should");
-const assert = require("assert");
-const di_1 = require("@molecuel/di");
 const core_1 = require("@molecuel/core");
+const di_1 = require("@molecuel/di");
 const mongodb_1 = require("@molecuel/mongodb");
 const dist_1 = require("../dist");
 let config = {
+    databases: [{
+            layer: dist_1.POPULATION_LAYER,
+            name: "mongodb_popul",
+            type: "MlclMongoDb",
+            uri: "mongodb://localhost/mongodb_population_test",
+        }, {
+            layer: dist_1.POPULATION_LAYER,
+            name: "failing_db",
+            type: "MlclMongoDb",
+            url: "not_an_actual_url"
+        }],
     molecuel: {
         database: {
-            name: 'mongodb_pers',
-            type: 'MlclMongoDb',
-            uri: 'mongodb://localhost/mongodb_persistence_test',
+            idPattern: "_id",
             layer: dist_1.PERSISTENCE_LAYER,
-            idPattern: '_id'
+            name: "mongodb_pers",
+            type: "MlclMongoDb",
+            uri: "mongodb://localhost/mongodb_persistence_test"
         }
-    },
-    databases: [{
-            name: 'mongodb_popul',
-            type: 'MlclMongoDb',
-            uri: 'mongodb://localhost/mongodb_population_test',
-            layer: dist_1.POPULATION_LAYER
-        }, {
-            name: 'failing_db',
-            type: 'MlclMongoDb',
-            url: 'not_an_actual_url',
-            layer: dist_1.POPULATION_LAYER
-        }]
+    }
 };
-describe('MlclDatabase', function () {
+describe("MlclDatabase", () => {
     before(() => {
         di_1.di.bootstrap(core_1.MlclCore, mongodb_1.MlclMongoDb);
     });
     let dbHandler;
-    describe('startup', () => {
-        it('should not have any connections upon init without configs', () => __awaiter(this, void 0, void 0, function* () {
-            dbHandler = di_1.di.getInstance('MlclDatabase');
+    describe("startup", () => {
+        it("should not have any connections upon init without configs", () => __awaiter(this, void 0, void 0, function* () {
+            dbHandler = di_1.di.getInstance("MlclDatabase");
             assert(dbHandler);
             dbHandler.should.be.instanceOf(dist_1.MlclDatabase);
             yield dbHandler.init();
             should.not.exist(dbHandler.connections);
         }));
-        it('should be possible to load the database config', () => {
+        it("should be possible to load the database config", () => {
             try {
                 dbHandler.addDatabasesFrom(config);
                 dbHandler.configs.should.be.an.Array();
@@ -66,7 +66,7 @@ describe('MlclDatabase', function () {
                 should.not.exist(error);
             }
         });
-        it('should be possible to initialize all configured Database interfaces', () => __awaiter(this, void 0, void 0, function* () {
+        it("should be possible to initialize all configured Database interfaces", () => __awaiter(this, void 0, void 0, function* () {
             try {
                 yield dbHandler.init();
             }
@@ -74,7 +74,7 @@ describe('MlclDatabase', function () {
                 should.not.exist(error);
             }
         }));
-        it('should be possible to access the database connections', () => {
+        it("should be possible to access the database connections", () => {
             try {
                 let connections = dbHandler.connections;
                 should.exist(connections);
@@ -86,28 +86,28 @@ describe('MlclDatabase', function () {
             }
         });
     });
-    describe('interaction', () => __awaiter(this, void 0, void 0, function* () {
+    describe("interaction", () => __awaiter(this, void 0, void 0, function* () {
         let Car = class Car {
-            get collection() { return 'cars'; }
+            static get collection() { return "cars"; }
         };
         Car = __decorate([
             di_1.injectable
         ], Car);
         let rollbackCar;
-        let car = di_1.di.getInstance('Car');
+        let car = di_1.di.getInstance("Car");
         car.id = 1;
-        car.make = 'C4';
-        car.engine = 'V6';
-        car.gearbox = '5gear';
+        car.make = "C4";
+        car.engine = "V6";
+        car.gearbox = "5gear";
         let engine = {
-            get collection() { return 'engines'; },
-            id: car.engine,
-            cylinders: parseInt(car.engine.slice(-1))
+            get collection() { return "engines"; },
+            cylinders: parseInt(car.engine.slice(-1), 10),
+            id: car.engine
         };
         let gearbox = {
-            get collection() { return 'transmissions'; },
-            id: car.gearbox,
-            gears: parseInt(car.gearbox.slice(0, 1))
+            get collection() { return "transmissions"; },
+            gears: parseInt(car.gearbox.slice(0, 1), 10),
+            id: car.gearbox
         };
         before(() => __awaiter(this, void 0, void 0, function* () {
             try {
@@ -118,10 +118,10 @@ describe('MlclDatabase', function () {
                 should.not.exist(error);
             }
         }));
-        it('should not store data in persistence layer (no collection; empty object)', () => __awaiter(this, void 0, void 0, function* () {
+        it("should not store data in persistence layer (no collection; empty object)", () => __awaiter(this, void 0, void 0, function* () {
             let response;
             try {
-                response = yield dbHandler.persistenceDatabases.save({ id: 2, make: 'B8' });
+                response = yield dbHandler.persistenceDatabases.save({ id: 2, make: "B8" });
             }
             catch (error) {
                 should.exist(error);
@@ -135,7 +135,7 @@ describe('MlclDatabase', function () {
             }
             should.not.exist(response);
         }));
-        it('should be possible to store data in persistence layer', () => __awaiter(this, void 0, void 0, function* () {
+        it("should be possible to store data in persistence layer", () => __awaiter(this, void 0, void 0, function* () {
             let response;
             try {
                 response = yield dbHandler.persistenceDatabases.save(car);
@@ -151,7 +151,7 @@ describe('MlclDatabase', function () {
             car.engine.should.equal(response.successes[0].engine);
             car.gearbox.should.equal(response.successes[0].gearbox);
         }));
-        it('should not read data from the persistence layer (no collection)', () => __awaiter(this, void 0, void 0, function* () {
+        it("should not read data from the persistence layer (no collection)", () => __awaiter(this, void 0, void 0, function* () {
             let response;
             try {
                 response = yield dbHandler.persistenceDatabases.find({ _id: car.id }, undefined);
@@ -161,30 +161,30 @@ describe('MlclDatabase', function () {
             }
             should.not.exist(response);
         }));
-        it('should be possible to read data from the persistence layer', () => __awaiter(this, void 0, void 0, function* () {
+        it("should be possible to read data from the persistence layer", () => __awaiter(this, void 0, void 0, function* () {
             let response;
             try {
-                response = yield dbHandler.persistenceDatabases.find({ id: car.id }, car.collection);
+                response = yield dbHandler.persistenceDatabases.find({ id: car.id }, Car.collection);
             }
             catch (error) {
                 should.not.exist(error);
             }
             should.exist(response);
         }));
-        it('should fail to populate non-saved references', () => __awaiter(this, void 0, void 0, function* () {
+        it("should fail to populate non-saved references", () => __awaiter(this, void 0, void 0, function* () {
             let response;
-            let errorObj = { engines: ['V2', 'V4'] };
+            let errorObj = { engines: ["V2", "V4"] };
             try {
-                response = yield dbHandler.populationDatabases.populate(errorObj, ['engines'], ['engines']);
+                response = yield dbHandler.populationDatabases.populate(errorObj, ["engines"], ["engines"]);
                 should.not.exist(response);
             }
             catch (error) {
                 should.exist(error);
                 assert(error.engines && error.engines === errorObj.engines);
             }
-            let partialErrorObj = { primaryEngine: 'V8', backupEngine: 'V6' };
+            let partialErrorObj = { primaryEngine: "V8", backupEngine: "V6" };
             try {
-                response = yield dbHandler.populationDatabases.populate(partialErrorObj, ['primaryEngine', 'backupEngine'], ['engines', 'engines']);
+                response = yield dbHandler.populationDatabases.populate(partialErrorObj, ["primaryEngine", "backupEngine"], ["engines", "engines"]);
                 should.not.exist(response);
             }
             catch (error) {
@@ -192,14 +192,14 @@ describe('MlclDatabase', function () {
                 assert(error.primaryEngine && error.primaryEngine === partialErrorObj.primaryEngine);
             }
         }));
-        it('should be possible to populate data', () => __awaiter(this, void 0, void 0, function* () {
+        it("should be possible to populate data", () => __awaiter(this, void 0, void 0, function* () {
             let response;
             try {
                 response = yield dbHandler.populationDatabases.populate(car, undefined, undefined);
                 should.exist(response);
-                response = yield dbHandler.populationDatabases.populate({ engines: ['V6', 'V6', 'V10'] }, ['engines'], ['engines']);
+                response = yield dbHandler.populationDatabases.populate({ engines: ["V6", "V6", "V10"] }, ["engines"], ["engines"]);
                 should.exist(response);
-                response = yield dbHandler.populationDatabases.populate(car, ['engine', 'gearbox'], ['engines', 'transmissions']);
+                response = yield dbHandler.populationDatabases.populate(car, ["engine", "gearbox"], ["engines", "transmissions"]);
                 should.exist(response);
                 car = response;
             }
@@ -207,7 +207,7 @@ describe('MlclDatabase', function () {
                 should.not.exist(error);
             }
         }));
-        it('should be possible to store populated data in the population layer', () => __awaiter(this, void 0, void 0, function* () {
+        it("should be possible to store populated data in the population layer", () => __awaiter(this, void 0, void 0, function* () {
             let response;
             try {
                 response = yield dbHandler.populationDatabases.save(car);
@@ -217,21 +217,21 @@ describe('MlclDatabase', function () {
             }
             should.exist(response);
         }));
-        it('should be possible to read data from the population layer', () => __awaiter(this, void 0, void 0, function* () {
+        it("should be possible to read data from the population layer", () => __awaiter(this, void 0, void 0, function* () {
             let response;
             try {
-                response = yield dbHandler.populationDatabases.find({ _id: car.id }, car.collection);
+                response = yield dbHandler.populationDatabases.find({ _id: car.id }, Car.collection);
             }
             catch (error) {
                 should.not.exist(error);
             }
             should.exist(response);
         }));
-        it('should roll back completed save operations after a failing one', () => __awaiter(this, void 0, void 0, function* () {
+        it("should roll back completed save operations after a failing one", () => __awaiter(this, void 0, void 0, function* () {
             let response;
-            rollbackCar = di_1.di.getInstance('Car');
+            rollbackCar = di_1.di.getInstance("Car");
             rollbackCar.id = 99;
-            rollbackCar.make = 'OOOO';
+            rollbackCar.make = "OOOO";
             rollbackCar.engine = car.engine._id;
             rollbackCar.gearbox = car.gearbox._id;
             try {
@@ -244,7 +244,7 @@ describe('MlclDatabase', function () {
             should.exist(response.successCount);
             response.successCount.should.equal(dbHandler.connections.length);
             response = undefined;
-            rollbackCar.make = 'IIII';
+            rollbackCar.make = "IIII";
             try {
                 yield dbHandler.connections[1].database.close();
                 response = yield dbHandler.save(rollbackCar);
@@ -252,14 +252,14 @@ describe('MlclDatabase', function () {
             catch (error) {
                 should.exist(error);
                 should.exist(error.message);
-                error.message.should.containEql('Rollback successful');
+                error.message.should.containEql("Rollback successful");
             }
             finally {
                 yield dbHandler.connections[1].database.open();
             }
             should.not.exist(response);
         }));
-        it('should fail saving on disconnected databases and not start a rollback (explicit suppression)', () => __awaiter(this, void 0, void 0, function* () {
+        it("should fail saving on disconnected databases and not start a rollback (explicit suppression)", () => __awaiter(this, void 0, void 0, function* () {
             let response;
             try {
                 for (let con of dbHandler.connections) {
