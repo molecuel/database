@@ -30,17 +30,17 @@ di.bootstrap(MlclCore, MlclDatabase, MlclMongoDb);
 let dbHandler: MlclDatabase = di.getInstance('MlclDatabase');
 let config: any = {
   databases: [{
+    idPattern: '_id',
+    layer: PERSISTENCE_LAYER,
     name: 'mongodb_pers',
     type: 'MlclMongoDb',
-    uri: 'mongodb://localhost/mongodb_persistence',
-    layer: PERSISTENCE_LAYER,
-    idPattern: '_id'
+    uri: 'mongodb://localhost/mongodb_persistence'
   },
   {
+    layer: POPULATION_LAYER,
     name: 'mongodb_popul',
     type: 'MlclMongoDb',
-    uri: 'mongodb://localhost/mongodb_population',
-    layer: POPULATION_LAYER
+    uri: 'mongodb://localhost/mongodb_population'
   }]
 };
 
