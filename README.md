@@ -8,7 +8,7 @@ It's initialization is based on the @molecuel/di dependency injection module and
 To use it, simply include its import in the di's bootstrap and get the singleton instance by name.
 You can then add configurations based on any object with respective properties (it is recommended to use seperate .json-files and @molecuel/core's config functionality; see below) and connect to databases (e.g. MongoDb).
 
-###  ./test/config/development.json :
+###  ./config/production.json :
 ```json
 {
     "databases": [
@@ -16,13 +16,7 @@ You can then add configurations based on any object with respective properties (
             "layer": "population",
             "name": "mongodb_popul",
             "type": "MlclMongoDb",
-            "uri": "mongodb://localhost/mongodb_population_test"
-        },
-        {
-            "layer": "population",
-            "name": "failing_db",
-            "type": "MlclMongoDb",
-            "url": "not_an_actual_url" 
+            "uri": "mongodb://localhost/mongodb_population"
         }
     ],
     "molecuel": {
@@ -31,7 +25,7 @@ You can then add configurations based on any object with respective properties (
             "layer": "persistence",
             "name": "mongodb_pers",
             "type": "MlclMongoDb",
-            "uri": "mongodb://localhost/mongodb_persistence_test" 
+            "uri": "mongodb://localhost/mongodb_persistence" 
         }
     }
 }
@@ -42,7 +36,7 @@ import { di } from '@molecuel/di';
 import { MlclConfig, MlclCore } from '@molecuel/core';
 import { MlclDatabase, PERSISTENCE_LAYER, POPULATION_LAYER } from '@molecuel/database';
 import { MlclMongoDb } from '@molecuel/mongodb';
-process.env.configpath = "./test/config/";
+process.env.configpath = "./config/";
 
 di.bootstrap(MlclCore, MlclDatabase, MlclMongoDb);
 
