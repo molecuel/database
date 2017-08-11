@@ -1,4 +1,5 @@
-# @molecuel/database [![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url] [![Coverage percentage][coveralls-image]][coveralls-url]
+# @molecuel/database
+[![NPM version][npm-image]][npm-url] [![Build Status][travis-image]][travis-url] [![Coverage percentage][coveralls-image]][coveralls-url]
 
 @molecuel/database is a general database management module, able to  manage all database libraries or classes adhering to @molecuel/core's IMlclDatabase interface definition and made injectable via @molecuel/di.
 It's initialization is based on the @molecuel/di dependency injection module and it exists as a singleton.
