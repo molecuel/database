@@ -1,11 +1,13 @@
 "use strict";
-import {IMlclDatabase} from "@molecuel/core";
-import {di, singleton} from "@molecuel/di";
+import { IMlclDatabase } from "@molecuel/core";
+import { di, singleton } from "@molecuel/di";
 import * as _ from "lodash";
-import {IMlclDbResult} from "./interfaces/IMlclDbResult";
+import { IMlclDbResult } from "./interfaces/IMlclDbResult";
 
 export const PERSISTENCE_LAYER = "persistence";
 export const POPULATION_LAYER = "population";
+
+// tslint:disable:trailing-comma
 
 @singleton
 export class MlclDatabase {
@@ -33,7 +35,7 @@ export class MlclDatabase {
           } else {
             databases.push(config[prop]);
           }
-        // check for sub-objects to resolve
+          // check for sub-objects to resolve
         } else if (typeof config[prop] === "object" && typeof config[prop] !== "function" && config[prop] !== null) {
           this.addDatabasesFrom(config[prop]);
         }
@@ -54,20 +56,20 @@ export class MlclDatabase {
     let connections: any[] = [];
     if (this.ownConfigs) {
       for (let database of this.ownConfigs) {
-        if (database && database.type && ((<any> database).uri || (<any> database).url)) {
-          let url = (<any> database).uri || (<any> database).url;
+        if (database && database.type && ((database as any).uri || (database as any).url)) {
+          let url = (database as any).uri || (database as any).url;
           let instance = di.getInstance(database.type, url);
           if (database.idPattern && instance) {
             Object.defineProperty(instance, "idPattern", {
               get(): string {
                 return database.idPattern;
-              // tslint:disable-next-line:trailing-comma
+                // tslint:disable-next-line:trailing-comma
               }
             });
           }
           try {
             await instance.connect();
-            connections.push({layer: database.layer, connection: instance});
+            connections.push({ layer: database.layer, connection: instance });
           } catch (error) {
             // console.log(error);
           }
@@ -89,14 +91,15 @@ export class MlclDatabase {
    * @returns {(Promise<boolean|Error[]>)}
    * @memberOf MlclDatabase
    */
-  public async rollback(data: Map<IMlclDatabase, Set<[any, string, boolean]>>): Promise<boolean|Error[]> {
+  public async rollback(data: Map<IMlclDatabase, Set<[any, string, boolean]>>): Promise<boolean | Error[]> {
     let result: IMlclDbResult = {
       errorCount: 0,
       errors: [],
-      successCount: 0 };
+      successCount: 0
+    };
     for (let [connection, query] of data) {
       try {
-        await (<any> connection).save(...query);
+        await (connection as any).save(...query);
         result.successCount++;
       } catch (error) {
         result.errorCount++;
@@ -122,13 +125,19 @@ export class MlclDatabase {
    * @memberOf MlclDatabase
    */
   // tslint:disable-next-line:max-line-length
-  public async save(document: any, collectionName?: string, upsert: boolean = true, rollbackOnError: boolean = true): Promise<any> {
+  public async save(
+    document: any,
+    upsert: boolean = true,
+    collectionName?: string,
+    externalIdPattern?: string,
+    rollbackOnError: boolean = true): Promise<any> {
     return new Promise(async (resolve, reject) => {
       let result: IMlclDbResult = {
         errorCount: 0,
         errors: [],
         successCount: 0,
-        successes: [] };
+        successes: []
+      };
       if (_.isEmpty(document)) {
         let rejection = new Error("Refused to save empty or undefined object.");
         delete rejection.stack;
@@ -147,10 +156,12 @@ export class MlclDatabase {
         for (let connectionShell of this.ownConnections) {
           // check for active connection
           if (connectionShell.connection) {
-            let idPattern = connectionShell.connection.idPattern || connectionShell.connection.constructor.idPattern;
+            let idPatternInternal = connectionShell.connection.idPattern
+              || connectionShell.connection.constructor.idPattern;
+            let idPatternExternal = externalIdPattern || di.getInstance("MlclConfig").getConfig().idPattern;
             if (rollbackOnError && collectionName) {
               let query = {};
-              query[idPattern] = document.id || document._id;
+              query[idPatternInternal] = document[idPatternExternal];
               // gather document states pre save
               try {
                 let response = await this.find(query, collectionName);
@@ -172,7 +183,7 @@ export class MlclDatabase {
             }
             // save document
             try {
-              copy[idPattern] = document.id || document._id;
+              copy[idPatternInternal] = document[idPatternExternal];
               let saved = await connectionShell.connection.save(copy, collectionName, upsert);
               result.successCount++;
               result.successes.push(saved);
@@ -191,7 +202,7 @@ export class MlclDatabase {
                   // error on rollback!
                   let rejectReason = new Error("Save failed on one or more databases. Rollback failed!");
                   delete rejectReason.stack;
-                  (<any> rejectReason).reason = error;
+                  (rejectReason as any).reason = error;
                   reject(rejectReason);
                 }
               }
@@ -251,7 +262,7 @@ export class MlclDatabase {
     let idPattern = this.ownConnections[0].connection.idPattern
       || this.ownConnections[0].connection.constructor.idPattern;
     // iterate over requested properties
-    for (let index: number = 0; index < properties.length; index ++) {
+    for (let index: number = 0; index < properties.length; index++) {
       // check for requested property existing on document
       if (document[properties[index]]) {
         let response;
@@ -259,7 +270,7 @@ export class MlclDatabase {
         try {
           // check if property is array of references
           if (_.isArray(document[properties[index]])) {
-            query[idPattern] = {$in: document[properties[index]]};
+            query[idPattern] = { $in: document[properties[index]] };
             response = await this.find(query, collections[index]);
             if (response && _.isArray(response) && response.length) {
               // map response items to current document items
@@ -277,7 +288,7 @@ export class MlclDatabase {
               successCount++;
             }
           } else {
-          // requested property is single reference
+            // requested property is single reference
             query[idPattern] = document[properties[index]];
             response = await this.find(query, collections[index]);
             if (response[0]) {
@@ -347,7 +358,7 @@ export class MlclDatabase {
     let persConn = _.filter(this.ownConnections, (conn) => {
       return (conn && conn.layer === PERSISTENCE_LAYER);
     });
-    return <MlclDatabase> this.deepFreeze(new MlclDatabaseSubset(persDbs, persConn));
+    return (this.deepFreeze(new MlclDatabaseSubset(persDbs, persConn)) as MlclDatabase);
   }
 
   /**
@@ -364,7 +375,7 @@ export class MlclDatabase {
     let popuConn = _.filter(this.ownConnections, (conn) => {
       return (conn && conn.layer === POPULATION_LAYER);
     });
-    return <MlclDatabase> this.deepFreeze(new MlclDatabaseSubset(popuDbs, popuConn));
+    return (this.deepFreeze(new MlclDatabaseSubset(popuDbs, popuConn)) as MlclDatabase);
   }
 
   /**

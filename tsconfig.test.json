@@ -2,7 +2,7 @@
   "extends": "./tsconfig",
   "compilerOptions": {
     "declaration": false,
-    "sourceMap": false,
+    "sourceMap": true,
     "outDir": "test/"
   },
   "include": [

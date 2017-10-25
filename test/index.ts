@@ -104,6 +104,8 @@ describe("MlclDatabase", () => {
       should.exist(response);
       should.exist(response.successes);
       should.exist(response.successes[0]);
+      // console.log(car);
+      // console.log(response.successes[0]);
       car.id.should.equal(response.successes[0]._id);
       car.make.should.equal(response.successes[0].make);
       car.engine.should.equal(response.successes[0].engine);
@@ -112,7 +114,7 @@ describe("MlclDatabase", () => {
     it("should not read data from the persistence layer (no collection)", async () => {
       let response;
       try {
-        response = await dbHandler.persistenceDatabases.find({_id: car.id}, undefined);
+        response = await dbHandler.persistenceDatabases.find({id: car.id}, undefined);
       } catch (error) {
         should.exist(error);
       }
@@ -234,7 +236,7 @@ describe("MlclDatabase", () => {
         for (let con of dbHandler.connections) {
           await con.database.close();
         }
-        response = await dbHandler.save(car, undefined, undefined, false);
+        response = await dbHandler.save(car, undefined, undefined, undefined, false);
       } catch (error) {
         should.exist(error);
         should.exist(error.errors);

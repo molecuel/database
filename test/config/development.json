@@ -21,5 +21,6 @@
             "type": "MlclMongoDb",
             "uri": "mongodb://localhost/mongodb_persistence_test" 
         }
-    }
+    },
+    "idPattern": "id"
 }
