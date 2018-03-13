@@ -233,7 +233,6 @@ export class MlclDatabase {
     let primaryResult;
     try {
       for (const connectionShell of this.ownConnections) {
-        console.log(connectionShell);
         let response = await connectionShell.connection.remove(query, collectionName);
         if (connectionShell === this.ownConnections[0]) {
           primaryResult = response;
