@@ -5,10 +5,10 @@ import * as assert from "assert";
 import "reflect-metadata";
 import * as should from "should";
 
-import {MlclConfig, MlclCore} from "@molecuel/core";
-import {di, injectable} from "@molecuel/di";
-import {MlclMongoDb} from "@molecuel/mongodb";
-import {MlclDatabase, PERSISTENCE_LAYER, POPULATION_LAYER} from "../dist";
+import { MlclConfig, MlclCore } from "@molecuel/core";
+import { di, injectable } from "@molecuel/di";
+import { MlclMongoDb } from "@molecuel/mongodb";
+import { MlclDatabase, PERSISTENCE_LAYER, POPULATION_LAYER } from "../dist";
 // import {Subject, Observable} from '@reactivex/rxjs';
 
 describe("MlclDatabase", () => {
@@ -28,8 +28,8 @@ describe("MlclDatabase", () => {
       try {
         let config = di.getInstance("MlclConfig").getConfig();
         dbHandler.addDatabasesFrom(config);
-        (<any> dbHandler).configs.should.be.an.Array();
-        (<any> dbHandler).configs.length.should.be.above(0);
+        (<any>dbHandler).configs.should.be.an.Array();
+        (<any>dbHandler).configs.length.should.be.above(0);
       } catch (error) {
         should.not.exist(error);
       }
@@ -66,11 +66,13 @@ describe("MlclDatabase", () => {
     let engine = {
       get collection() { return "engines"; },
       cylinders: parseInt(car.engine.slice(-1), 10),
-      id: car.engine };
+      id: car.engine
+    };
     let gearbox = {
       get collection() { return "transmissions"; },
       gears: parseInt(car.gearbox.slice(0, 1), 10),
-      id: car.gearbox };
+      id: car.gearbox
+    };
     before(async () => {
       try {
         await dbHandler.save(engine);
@@ -82,7 +84,7 @@ describe("MlclDatabase", () => {
     it("should not store data in persistence layer (no collection; empty object)", async () => {
       let response;
       try {
-        response = await dbHandler.persistenceDatabases.save({id: 2, make: "B8"});
+        response = await dbHandler.persistenceDatabases.save({ id: 2, make: "B8" });
       } catch (error) {
         should.exist(error);
       }
@@ -114,7 +116,7 @@ describe("MlclDatabase", () => {
     it("should not read data from the persistence layer (no collection)", async () => {
       let response;
       try {
-        response = await dbHandler.persistenceDatabases.find({id: car.id}, undefined);
+        response = await dbHandler.persistenceDatabases.find({ id: car.id }, undefined);
       } catch (error) {
         should.exist(error);
       }
@@ -123,7 +125,7 @@ describe("MlclDatabase", () => {
     it("should be possible to read data from the persistence layer", async () => {
       let response;
       try {
-        response = await dbHandler.persistenceDatabases.find({id: car.id}, Car.collection);
+        response = await dbHandler.persistenceDatabases.find({ id: car.id }, Car.collection);
       } catch (error) {
         should.not.exist(error);
       }
@@ -131,7 +133,7 @@ describe("MlclDatabase", () => {
     });
     it("should fail to populate non-saved references", async () => {
       let response;
-      let errorObj = {engines: ["V2", "V4"]};
+      let errorObj = { engines: ["V2", "V4"] };
       try {
         response = await dbHandler.populationDatabases.populate(errorObj, ["engines"], ["engines"]);
         should.not.exist(response);
@@ -139,7 +141,7 @@ describe("MlclDatabase", () => {
         should.exist(error);
         assert(error.engines && error.engines === errorObj.engines);
       }
-      let partialErrorObj = {primaryEngine: "V8", backupEngine: "V6"};
+      let partialErrorObj = { primaryEngine: "V8", backupEngine: "V6" };
       try {
         response = await dbHandler.populationDatabases.populate(
           partialErrorObj,
@@ -157,7 +159,7 @@ describe("MlclDatabase", () => {
         response = await dbHandler.populationDatabases.populate(car, undefined, undefined);
         should.exist(response);
         response = await dbHandler.populationDatabases.populate(
-          {engines: ["V6", "V6", "V10"]},
+          { engines: ["V6", "V6", "V10"] },
           ["engines"],
           ["engines"]);
         should.exist(response);
@@ -183,24 +185,21 @@ describe("MlclDatabase", () => {
     it("should be possible to read data from the population layer", async () => {
       let response;
       try {
-        response = await dbHandler.populationDatabases.find({_id: car.id}, Car.collection);
+        response = await dbHandler.populationDatabases.find({ _id: car.id }, Car.collection);
       } catch (error) {
         should.not.exist(error);
       }
       should.exist(response);
     });
-    // it('should fail rolling back', async () => {
-    //   let response;
-    //   try {
-    //     response = await dbHandler.save({ _id: 1, collection: 'robots', beep: 'boop' });
-    //   } catch (error) {
-    //     should.exist(error);
-    //     console.log(error);
-    //     should.exist(error.message);
-    //     error.message.should.containEql('Rollback failed');
-    //   }
-    //   should.not.exist(response);
-    // });
+    it("should delete from all databases by query", async () => {
+      let response;
+      try {
+        response = await dbHandler.remove({ _id: { $exists: true } }, Car.collection);
+      } catch (error) {
+        should.not.exist(error);
+      }
+      should.exist(response);
+    });
     it("should roll back completed save operations after a failing one", async () => {
       let response;
       rollbackCar = di.getInstance("Car");

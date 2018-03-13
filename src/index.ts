@@ -221,6 +221,31 @@ export class MlclDatabase {
   }
 
   /**
+   * Delete document in collection on all coneccted databases
+   *
+   * @param {Object} query
+   * @param {string} collectionName
+   * @returns {(Promise<number | Error>)}
+   *
+   * @memberOf MlclDatabase
+   */
+  public async remove(query: Object, collectionName: string): Promise<number> {
+    let primaryResult;
+    try {
+      for (const connectionShell of this.ownConnections) {
+        console.log(connectionShell);
+        let response = await connectionShell.connection.remove(query, collectionName);
+        if (connectionShell === this.ownConnections[0]) {
+          primaryResult = response;
+        }
+      }
+      return Promise.resolve(primaryResult);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+
+  /**
    * Find document in collection of the first connection by query
    *
    * @param {Object} query

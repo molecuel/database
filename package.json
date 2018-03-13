@@ -1,6 +1,6 @@
 {
   "name": "@molecuel/database",
-  "version": "2.0.0-alpha8",
+  "version": "2.0.0-beta1",
   "description": "Molecuel Database Module",
   "main": "dist/index.js",
   "scripts": {
@@ -34,8 +34,7 @@
   },
   "homepage": "https://github.com/molecuel/database#readme",
   "devDependencies": {
-    "@molecuel/mongodb": "^2.0.1-alpha13",
-    "@types/fast-json-patch": "^1.0.4",
+    "@molecuel/mongodb": "^2.0.1-beta1",
     "@types/mocha": "^2.2.33",
     "@types/mongodb": "^2.1.38",
     "@types/when": "^2.4.28",
