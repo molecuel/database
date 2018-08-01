@@ -28,8 +28,8 @@ describe("MlclDatabase", () => {
       try {
         let config = di.getInstance("MlclConfig").getConfig();
         dbHandler.addDatabasesFrom(config);
-        (<any>dbHandler).configs.should.be.an.Array();
-        (<any>dbHandler).configs.length.should.be.above(0);
+        (<any> dbHandler).configs.should.be.an.Array();
+        (<any> dbHandler).configs.length.should.be.above(0);
       } catch (error) {
         should.not.exist(error);
       }
@@ -66,12 +66,12 @@ describe("MlclDatabase", () => {
     let engine = {
       get collection() { return "engines"; },
       cylinders: parseInt(car.engine.slice(-1), 10),
-      id: car.engine
+      id: car.engine,
     };
     let gearbox = {
       get collection() { return "transmissions"; },
       gears: parseInt(car.gearbox.slice(0, 1), 10),
-      id: car.gearbox
+      id: car.gearbox,
     };
     before(async () => {
       try {
@@ -106,8 +106,6 @@ describe("MlclDatabase", () => {
       should.exist(response);
       should.exist(response.successes);
       should.exist(response.successes[0]);
-      // console.log(car);
-      // console.log(response.successes[0]);
       car.id.should.equal(response.successes[0]._id);
       car.make.should.equal(response.successes[0].make);
       car.engine.should.equal(response.successes[0].engine);
@@ -249,6 +247,16 @@ describe("MlclDatabase", () => {
       }
       should.not.exist(response);
       // should.not.exist(response.message);
+    });
+    it("should test projection", async () => {
+      try {
+        const partial: any[] = await dbHandler.connections[0].database.collection(Car.collection)
+          .find({}).project({engine: true, _id: false}).toArray();
+        Array.isArray(partial).should.be.true();
+        partial.every((item) => (Object.keys(item).length === 1 && Object.keys(item)[0] === "engine")).should.be.true();
+      } catch (error) {
+        should.not.exist(error);
+      }
     });
   }); // category end
   after(async () => {
